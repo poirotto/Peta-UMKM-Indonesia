@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peta UMKM Indonesia 2025</title>
+<meta name="description" content="Dashboard 3D sebaran UMKM 38 provinsi Indonesia 2025: jumlah, naik kelas, formalitas, dan buruh tetap. Klik provinsi untuk masuk ke diorama pasar malamnya.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.min.js" } }</script>
+<style>
+:root{
+  --putih:#FBF9F6; --tx:#15171D; --mut:#5E6472; --mut2:#9097A4; --line:rgba(21,23,29,.08);
+  --biru:#1F56B8; --biru2:#3D6BD6; --oranye:#EE6A2C; --oranye2:#F58A3A; --navy:#15171D;
+  --grad:linear-gradient(120deg,#1F56B8 0%,#5B7FE0 38%,#F4A57A 68%,#EE6A2C 100%);
+  --glass:rgba(255,255,255,.74);
+  --pad:16px; --lw:272px; --rw:272px; --dock:158px; --sheet:290px; --top:68px; --r:20px;
+  --disp:'Outfit','Manrope',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;color:var(--tx);font:13.5px/1.45 'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--putih)}
+body{overflow:hidden;background:
+  radial-gradient(820px 640px at -6% -12%,rgba(31,86,184,.62),rgba(31,86,184,.18) 42%,rgba(31,86,184,0) 66%),
+  radial-gradient(760px 620px at 106% 112%,rgba(238,106,44,.66),rgba(245,138,58,.2) 44%,rgba(238,106,44,0) 68%),
+  radial-gradient(520px 420px at 104% -8%,rgba(238,106,44,.20),rgba(238,106,44,0) 70%),
+  radial-gradient(560px 460px at -4% 108%,rgba(21,23,29,.30),rgba(31,86,184,.10) 45%,rgba(21,23,29,0) 72%),
+  var(--putih);background-attachment:fixed}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.disp{font-family:var(--disp)}
+.num{font-variant-numeric:tabular-nums}
+.gtx{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kaca{background:var(--glass);border:1px solid rgba(255,255,255,.9);border-radius:var(--r);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);box-shadow:0 22px 50px -26px rgba(21,23,29,.35),0 1px 0 rgba(21,23,29,.04)}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--mut2)}
+.eyebrow::after{content:"";display:block;width:26px;height:2px;border-radius:2px;background:var(--oranye);margin-top:7px}
+
+#stage{position:fixed;inset:0;z-index:0}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;transition:opacity .5s}
+.lbl .tag{display:flex;align-items:center;gap:8px;white-space:nowrap;padding:4px 11px 4px 4px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:11.5px;font-weight:700;box-shadow:0 10px 24px -12px rgba(21,23,29,.45)}
+.lbl .tag i{font-style:normal;font-family:var(--disp);font-weight:600;font-size:11px;width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:var(--grad);color:#fff}
+.lbl .tag b{color:var(--oranye);font-weight:800}
+.lbl .stem{width:1.5px;background:linear-gradient(rgba(21,23,29,.55),rgba(21,23,29,0));height:14px}
+
+/* TOP BAR */
+.topbar{position:absolute;top:var(--pad);left:var(--pad);right:var(--pad);height:var(--top);z-index:4;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:0 12px 0 14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none}
+.brand h1{font-family:var(--disp);font-size:19px;font-weight:600;margin:0;white-space:nowrap;letter-spacing:-.01em}
+.brand p{margin:0;font-size:11.5px;color:var(--mut);white-space:nowrap}
+.seg{display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(21,23,29,.05);border:1px solid var(--line)}
+.seg button{padding:8px 16px;border-radius:999px;font-weight:700;font-size:12.5px;color:var(--mut);white-space:nowrap;transition:color .2s,background .25s,box-shadow .25s}
+.seg button:hover{color:var(--tx)}
+.seg button.on{background:var(--grad);color:#fff;box-shadow:0 8px 20px -8px rgba(238,106,44,.6)}
+.kanan{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.cari{position:relative}
+.cari input{width:210px;height:38px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 14px 0 36px;font-size:12.5px;outline:none;transition:border-color .2s,width .3s,box-shadow .2s}
+.cari input:focus{border-color:rgba(31,86,184,.45);width:240px;box-shadow:0 0 0 4px rgba(31,86,184,.1)}
+.cari input::placeholder{color:var(--mut2)}
+.cari svg{position:absolute;left:12px;top:12px;opacity:.55}
+.ikon{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-weight:600;font-family:var(--disp);font-size:15px;color:var(--mut);transition:color .2s,border-color .2s}
+.ikon:hover,.ikon[aria-expanded="true"]{color:var(--oranye);border-color:rgba(238,106,44,.45)}
+.bar-dio{display:none}
+.bar-dio .kembali{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px 0 11px;border-radius:999px;background:var(--navy);color:#fff;font-weight:700;font-size:12.5px;transition:transform .2s}
+.bar-dio .kembali:hover{transform:translateX(-2px)}
+.bar-dio h2{font-family:var(--disp);font-weight:600;font-size:21px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;background:rgba(238,106,44,.1);color:#C24E17;white-space:nowrap}
+.chip.t{background:rgba(31,86,184,.09);color:var(--biru)}
+.navp{display:flex;gap:6px}
+.navp button{height:38px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:700;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.navp button:hover{border-color:rgba(31,86,184,.4);color:var(--biru)}
+.navp button span{color:var(--mut2);margin:0 4px}
+
+#info{position:absolute;top:calc(var(--pad) + var(--top) + 10px);right:var(--pad);width:380px;z-index:6;padding:18px 18px 14px;display:none;font-size:12.5px;background:rgba(255,255,255,.94)}
+#info.buka{display:block}
+#info h3{font-family:var(--disp);font-size:16px;font-weight:600;margin:0 0 8px}
+#info p{margin:0 0 10px;color:var(--mut)}
+#info a{color:var(--biru)}
+
+/* KARTU KIRI */
+.nas{position:absolute;left:var(--pad);top:calc(var(--pad) + var(--top) + 12px);width:var(--lw);z-index:3;padding:16px 16px 14px}
+.nas .besar{font-family:var(--disp);font-size:46px;font-weight:600;line-height:1;margin:12px 0 4px;letter-spacing:-.02em}
+.nas .besar small{font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:var(--tx);margin-left:6px;letter-spacing:0;-webkit-text-fill-color:var(--tx)}
+.naik{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--biru)}
+.nas svg.tren{display:block;width:100%;height:auto;margin:10px 0 2px;overflow:visible}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.kpi div{border-radius:14px;padding:8px 10px;background:rgba(21,23,29,.035)}
+.kpi b{display:block;font-family:var(--disp);font-weight:600;font-size:17px}
+.kpi span{display:block;font-size:10.5px;color:var(--mut);line-height:1.3;margin-top:1px}
+.kpi div.n b::after{content:"nas.";font:800 9px 'Manrope',sans-serif;color:var(--mut2);margin-left:5px;vertical-align:2px;text-transform:uppercase;letter-spacing:.08em}
+.kpi .ctx{grid-column:1/3;display:flex;justify-content:space-between;gap:8px;background:transparent;border-top:1px solid var(--line);border-radius:0;padding:10px 2px 0}
+.kpi .ctx p{margin:0;font-size:10.5px;color:var(--mut);line-height:1.3}
+.kpi .ctx p b{font-size:14px;display:inline}
+
+/* KARTU KANAN */
+.sorot{position:absolute;right:var(--pad);top:calc(var(--pad) + var(--top) + 12px);width:var(--rw);z-index:3;padding:16px}
+.sorot h3{font-family:var(--disp);font-weight:500;font-size:18px;line-height:1.25;margin:10px 0 12px;letter-spacing:-.01em}
+.sorot .row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:12px}
+.sorot .row span{color:var(--mut)}
+.sorot .row em{font-style:normal;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sorot .row b{font-family:var(--disp);font-weight:600;font-size:13.5px;color:var(--oranye)}
+.leg{margin-top:12px}
+.leg .grad{height:8px;border-radius:99px;margin:6px 0 4px}
+.leg .ujung{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.desk{font-size:11.5px;color:var(--mut);margin:10px 0 0}
+.src{font-size:10px;color:var(--mut2);margin:12px 0 0;line-height:1.45}
+.src a{color:var(--mut)}
+
+/* DOK */
+.dock{position:absolute;left:var(--pad);right:var(--pad);bottom:var(--pad);height:var(--dock);z-index:3;padding:12px 16px 10px;display:flex;flex-direction:column}
+.dock .kepala{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.dock .kepala h3{font-family:var(--disp);font-weight:600;font-size:14px;margin:0}
+.dock .kepala span{font-size:11px;color:var(--mut)}
+.bars{position:relative;flex:1;display:flex;gap:4px;align-items:flex-end;margin-top:8px;min-height:0}
+.bars .kol{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;border-radius:10px;padding:0 0 2px;position:relative;transition:background .2s}
+.bars .kol .bt{width:70%;max-width:22px;border-radius:6px 6px 2px 2px;transition:height .8s cubic-bezier(.2,.8,.2,1),filter .2s,box-shadow .2s,transform .2s;min-height:2px}
+.bars .kol .kd{font-size:9px;font-weight:800;letter-spacing:.04em;color:var(--mut2);writing-mode:vertical-rl;transform:rotate(180deg);height:46px;text-align:left;white-space:nowrap;transition:color .2s}
+.bars .kol:hover,.bars .kol.hov{background:rgba(31,86,184,.06)}
+.bars .kol:hover .kd,.bars .kol.hov .kd{color:var(--oranye)}
+.bars .kol.hov .bt,.bars .kol:hover .bt{transform:scaleX(1.15);box-shadow:0 6px 16px -4px rgba(238,106,44,.6)}
+.bars .nasl{position:absolute;left:0;right:0;border-top:1.5px dashed rgba(21,23,29,.4);pointer-events:none;transition:bottom .8s cubic-bezier(.2,.8,.2,1)}
+.bars .nasl span{position:absolute;right:0;top:-18px;font-size:9.5px;font-weight:800;color:#fff;background:var(--navy);padding:2px 7px;border-radius:6px;letter-spacing:.06em}
+
+/* DIO */
+.cap{position:absolute;left:var(--pad);top:calc(var(--pad) + var(--top) + 12px);z-index:3;max-width:780px;padding:11px 14px}
+.cap p{margin:0 0 8px;font-size:12.5px;color:var(--mut)}
+.cap p b{color:var(--tx)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--mut)}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.lg i{width:10px;height:10px;border-radius:50%}
+.sheet{position:absolute;left:var(--pad);right:var(--pad);bottom:var(--pad);height:var(--sheet);z-index:3;display:grid;grid-template-columns:1.05fr 1fr 1fr;padding:0}
+.sheet > section{padding:18px 20px 16px;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(21,23,29,.18) transparent}
+.sheet > section + section{border-left:1px solid var(--line)}
+.sheet h4{font-family:var(--disp);font-weight:600;font-size:14px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sheet h4 span{font:600 10.5px 'Manrope',sans-serif;color:var(--mut2)}
+.angka{font-family:var(--disp);font-weight:600;font-size:40px;line-height:1;display:flex;align-items:baseline;gap:8px;letter-spacing:-.02em}
+.angka small{font:700 13px 'Manrope',sans-serif;color:var(--tx);-webkit-text-fill-color:var(--tx)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.stack{display:flex;height:12px;border-radius:99px;overflow:hidden;background:rgba(21,23,29,.06)}
+.stack i{display:block;height:100%}
+.zoom{margin-top:12px}
+.zoom .ket{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut2);margin-bottom:5px}
+.rows{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 10px;align-items:center;margin-top:12px;font-size:12px}
+.rows i{width:9px;height:9px;border-radius:50%}
+.rows .v{font-weight:700;text-align:right}
+.rows .p{color:var(--mut);text-align:right;min-width:48px}
+.ind{margin-bottom:14px}
+.ind .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px}
+.ind .t b{font-family:var(--disp);font-weight:600;font-size:18px}
+.ind .trek{position:relative;height:8px;border-radius:99px;background:rgba(21,23,29,.07);margin:7px 0 5px}
+.ind .trek i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.ind .trek u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--navy);border-radius:2px}
+.ind .k{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--mut)}
+.ind .k .up{color:var(--biru);font-weight:700}.ind .k .dn{color:#D24A12;font-weight:700}
+.rinci{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:11.5px;color:var(--mut);padding:10px 12px;border-radius:14px;background:rgba(21,23,29,.035);margin-bottom:10px}
+.rinci b{color:var(--tx);text-align:right}
+.rinci .h{grid-column:1/3;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut2)}
+.siluet{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.siluet svg{width:86px;height:64px;flex:none}
+.siluet p{margin:0;font-size:11.5px;color:var(--mut)}
+.siluet p b{font-family:var(--disp);font-weight:600;font-size:14px;color:var(--tx)}
+.catatan{font-size:11px;color:#9A3D0E;background:rgba(238,106,44,.08);border:1px solid rgba(238,106,44,.2);border-radius:12px;padding:8px 10px}
+
+/* MODE */
+.nas,.sorot,.dock,.cap,.sheet{transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+body.mode-dio .nas{opacity:0;transform:translateX(-30px);pointer-events:none}
+body.mode-dio .sorot{opacity:0;transform:translateX(30px);pointer-events:none}
+body.mode-dio .dock{opacity:0;transform:translateY(30px);pointer-events:none}
+body.mode-peta .cap{opacity:0;transform:translateY(-12px);pointer-events:none}
+body.mode-peta .sheet{opacity:0;transform:translateY(40px);pointer-events:none}
+body.mode-dio .bar-peta{display:none}
+body.mode-dio .bar-dio{display:flex}
+body.mode-dio #labels .lbl{opacity:0!important}
+body.memuat .nas,body.memuat .sorot,body.memuat .dock{opacity:0}
+
+#tip{position:fixed;left:0;top:0;z-index:20;pointer-events:none;min-width:170px;max-width:270px;padding:10px 12px;border-radius:14px;background:var(--navy);color:#fff;box-shadow:0 18px 40px -14px rgba(21,23,29,.6);font-size:12px;opacity:0;transition:opacity .15s}
+#tip b{display:block;font-family:var(--disp);font-weight:600;font-size:14px;margin-bottom:3px}
+#tip .v{color:#FFB083;font-weight:700}
+#tip .r{color:#B9C0CC;display:block}
+#tip .k{color:#8FB0FF;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:5px}
+#pesan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--mut);font-weight:700;text-align:center;max-width:42ch;z-index:1}
+
+@media (max-width:1280px){:root{--lw:262px;--rw:262px}.cari input{width:160px}.cari input:focus{width:190px}.seg button{padding:8px 11px}.brand p{display:none}}
+@media (max-width:1060px){.brand h1{font-size:15px}.navp button{max-width:120px}}
+@media (max-width:900px){
+  body{overflow:auto;height:auto;display:flex;flex-direction:column;gap:12px;padding:12px;background-attachment:scroll}
+  .topbar{position:static;height:auto;display:flex;flex-wrap:wrap;padding:12px;order:1}
+  .brand{flex:1 1 100%}
+  .bar-peta.seg{order:3;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}
+  .kanan.bar-peta{flex:1 1 100%}
+  .cari{flex:1}.cari input,.cari input:focus{width:100%}
+  body.mode-dio .bar-dio{display:flex}
+  body.mode-dio .bar-dio.kiri{flex:1 1 100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  body.mode-dio .bar-dio.seg{flex:1 1 auto}
+  body.mode-dio .navp{flex:1 1 100%}.navp button{flex:1;max-width:none}
+  #stage{position:relative;inset:auto;order:2;height:min(42vh,320px);min-height:260px;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.35)}
+  body.mode-dio #stage{height:60vh;min-height:420px}
+  .nas,.sorot,.dock,.cap,.sheet{position:static;width:auto;height:auto;transform:none!important}
+  .cap{order:3}.sheet{order:4;display:block}.sheet > section + section{border-left:0;border-top:1px solid var(--line)}
+  .nas{order:4}.sorot{order:5}.dock{order:3;height:200px}
+  .bars{overflow-x:auto;scrollbar-width:none}.bars .kol{min-width:22px}
+  body.mode-dio .nas,body.mode-dio .sorot,body.mode-dio .dock{display:none}
+  body.mode-peta .cap,body.mode-peta .sheet{display:none}
+  #info{position:fixed;left:12px;right:12px;width:auto;top:12px}
+  .lbl:nth-child(n+4){display:none}
+  .lbl .tag{font-size:10.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body class="mode-peta memuat">
+
+<div id="stage">
+  <canvas id="gl" tabindex="0" aria-label="Peta 3D UMKM per provinsi"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+  <p id="pesan">Menyiapkan peta…</p>
+</div>
+
+<header class="kaca topbar">
+  <div class="brand bar-peta">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F58A3A"/><stop offset="1" stop-color="#EE6A2C"/></linearGradient></defs>
+      <ellipse cx="17" cy="26" rx="11" ry="4" fill="#15171D"/><rect x="6" y="20" width="22" height="6" fill="#1F56B8"/><ellipse cx="17" cy="20" rx="11" ry="4" fill="#5B7FE0"/>
+      <rect x="6" y="13" width="22" height="7" fill="url(#lg1)" opacity=".85"/><ellipse cx="17" cy="20" rx="11" ry="4" fill="none"/><ellipse cx="17" cy="13" rx="11" ry="4" fill="#F7B48A"/></svg>
+    <div><h1>Peta UMKM Indonesia</h1><p>Capaian 2025 · 38 provinsi · Kementerian UMKM</p></div>
+  </div>
+  <nav class="seg bar-peta" id="seg" role="tablist" aria-label="Indikator"></nav>
+  <div class="kanan bar-peta">
+    <label class="cari"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="cari" list="dl-prov" placeholder="Cari provinsi…" autocomplete="off" aria-label="Cari provinsi"></label>
+    <datalist id="dl-prov"></datalist>
+    <button class="ikon" id="btn-info" type="button" aria-expanded="false" aria-controls="info" title="Tentang data">i</button>
+  </div>
+
+  <div class="bar-dio kiri" style="align-items:center;gap:12px;min-width:0;justify-self:start">
+    <button class="kembali" id="kembali" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Peta</button>
+    <div style="min-width:0"><h2 id="dio-nama"></h2><div style="display:flex;gap:6px;margin-top:3px" id="dio-chip"></div></div>
+  </div>
+  <nav class="seg bar-dio" id="lensa" role="tablist" aria-label="Lensa diorama"></nav>
+  <div class="navp bar-dio" id="navp" style="justify-content:flex-end"></div>
+</header>
+
+<aside class="kaca" id="info" role="dialog" aria-label="Tentang data">
+  <h3>Tentang data</h3>
+  <p>Angka 2025 berasal dari Data Prioritas Capaian 2025 Kementerian UMKM (Biro Data dan Teknologi Informasi): jumlah usaha per skala, proporsi pelaku usaha berbadan hukum atau berpembukuan lengkap, dan rasio pelaku usaha yang dibantu buruh tetap. Proporsi UMKM ber-NIB dan porsi kredit UMKM hanya tersedia di tingkat nasional.</p>
+  <p>Tren 2020–2024 dan konteks nasional (kontribusi PDB, tenaga kerja, rasio kewirausahaan) diambil dari publikasi UMKM dalam Angka 2020–2024 Kementerian UMKM.</p>
+  <p>Beberapa provinsi mencatat angka 0 untuk usaha menengah atau besar. Angka ini kemungkinan muncul karena keterbatasan sampel survei, bukan karena usahanya tidak ada.</p>
+  <p>Batas provinsi: <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces">Indonesia GeoJSON 38 provinsi</a>, lisensi <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>, disederhanakan.</p>
+</aside>
+
+<aside class="kaca nas" id="nas" aria-label="Ringkasan nasional"></aside>
+<aside class="kaca sorot" id="sorot" aria-label="Sorotan indikator"></aside>
+<section class="kaca dock" aria-label="Semua provinsi">
+  <div class="kepala"><h3 id="dock-judul">38 provinsi</h3><span id="dock-ket"></span></div>
+  <div class="bars" id="bars"></div>
+</section>
+
+<aside class="kaca cap" id="cap"><p id="cap-teks"></p><div class="lg" id="cap-lg"></div></aside>
+<section class="kaca sheet" id="sheet" aria-live="polite"></section>
+
+<div id="tip" role="tooltip"></div>
+
+<script>setTimeout(function(){if(document.body.classList.contains('memuat')){var m=document.getElementById('pesan');if(m)m.textContent='Peta 3D belum termuat. Periksa koneksi internet lalu muat ulang halaman.';}},12000);</script>
+<script id="data" type="application/json">{"nasional":{"kode":999,"nama":"Nasional","mikro":54817720,"kecil":1053171,"menengah":809344,"besar":50034,"total":56730269,"ukm":1862515,"propUkm":0.03283106237342185,"bh":786530,"buku":357335,"formal":1143865,"propFormal":0.020163221859568477,"btt":20308133,"bt":5063122,"rasioBT":0.19956135398110972,"umkm":56680235,"kreditUmkm":0.173143561,"izinUsaha":0.260054867},"provinsi":[{"kode":11,"nama":"Aceh","mikro":1002381,"kecil":24917,"menengah":13136,"besar":568,"total":1041002,"ukm":38053,"propUkm":0.036554204506811704,"bh":9364,"buku":2818,"formal":12182,"propFormal":0.011702186931437212,"btt":368375,"bt":114048,"rasioBT":0.23640663898694714,"umkm":1040434,"rings":[[[95.325,5.773],[95.348,5.887],[95.217,5.907],[95.325,5.773]],[[95.804,2.635],[96.08,2.567],[96.345,2.341],[96.498,2.363],[96.453,2.476],[96.108,2.636],[96.092,2.749],[95.787,2.926],[95.692,2.774],[95.804,2.635]],[[97.178,2.234],[97.113,2.216],[97.341,2.055],[97.301,2.214],[97.178,2.234]],[[98.253,4.29],[98.287,4.417],[97.986,4.534],[97.904,4.891],[97.497,5.249],[97.203,5.143],[96.859,5.275],[96.393,5.21],[96.082,5.292],[95.888,5.502],[95.611,5.628],[95.432,5.657],[95.194,5.527],[95.218,5.284],[95.54,4.656],[96.502,3.746],[96.88,3.677],[97.364,2.996],[97.592,2.881],[97.668,2.391],[97.786,2.231],[97.952,2.27],[98.127,2.17],[98.197,2.313],[98.081,2.518],[98.109,2.777],[97.949,2.895],[97.982,3.116],[97.911,3.252],[98.029,3.331],[97.801,3.723],[97.9,3.909],[98.083,3.954],[98.072,4.25],[98.253,4.29]]]},{"kode":12,"nama":"Sumatera Utara","mikro":2888205,"kecil":53931,"menengah":40745,"besar":2688,"total":2985569,"ukm":94676,"propUkm":0.031711208148262525,"bh":38219,"buku":23499,"formal":61718,"propFormal":0.02067210638910037,"btt":1084123,"bt":345077,"rasioBT":0.24144766302826756,"umkm":2982881,"rings":[[[97.513,0.906],[97.71,0.561],[97.885,0.607],[97.92,1.025],[97.688,1.18],[97.489,1.473],[97.35,1.541],[97.283,1.425],[97.059,1.406],[97.513,0.906]],[[98.36,-0.546],[98.506,-0.543],[98.441,-0.246],[98.36,-0.546]],[[98.346,-0.04],[98.535,-0.352],[98.471,-0.094],[98.381,0.008],[98.346,-0.04]],[[98.601,0.093],[98.854,0.116],[98.525,0.142],[98.601,0.093]],[[98.253,4.29],[98.072,4.25],[98.083,3.954],[97.9,3.909],[97.801,3.723],[98.029,3.331],[97.911,3.252],[97.982,3.116],[97.949,2.895],[98.109,2.777],[98.081,2.518],[98.197,2.313],[98.127,2.17],[98.828,1.674],[98.73,1.529],[99.058,0.742],[99.167,0.228],[99.512,0.539],[99.908,0.472],[99.964,0.546],[99.831,0.696],[99.837,0.891],[100.181,0.762],[100.122,0.821],[100.166,1.17],[100.053,1.38],[100.434,1.52],[100.39,1.76],[100.28,1.812],[100.373,2.224],[100.322,2.548],[100.22,2.704],[99.985,2.758],[99.992,2.94],[99.757,3.168],[98.706,3.772],[98.541,4.012],[98.173,4.113],[98.253,4.29]]]},{"kode":13,"nama":"Sumatera Barat","mikro":1274306,"kecil":21814,"menengah":15258,"besar":603,"total":1311981,"ukm":37072,"propUkm":0.02825650676343636,"bh":13903,"buku":5322,"formal":19225,"propFormal":0.014653413425956626,"btt":523278,"bt":121373,"rasioBT":0.18827706774673428,"umkm":1311378,"rings":[[[99.276,-1.642],[98.909,-0.909],[98.685,-0.96],[98.597,-1.199],[98.825,-1.616],[99.125,-1.808],[99.243,-1.796],[99.216,-1.64],[99.277,-1.746],[99.276,-1.642]],[[100.125,-2.836],[100.222,-2.75],[99.972,-2.514],[100.012,-2.844],[100.125,-2.836]],[[99.812,-2.305],[99.692,-2.077],[99.558,-2.052],[99.6,-2.283],[99.864,-2.389],[99.812,-2.305]],[[100.257,-3.05],[100.465,-3.347],[100.379,-3.169],[100.467,-3.147],[100.457,-3.015],[100.189,-2.791],[100.257,-3.05]],[[100.181,0.762],[99.837,0.891],[99.831,0.696],[99.964,0.546],[99.908,0.472],[99.512,0.539],[99.167,0.228],[99.36,0.228],[99.73,-0.021],[99.82,-0.301],[100.33,-0.859],[100.401,-1.271],[100.567,-1.334],[100.638,-1.608],[100.868,-1.944],[100.825,-2.178],[101.022,-2.478],[101.293,-2.289],[101.135,-1.684],[101.477,-1.677],[101.68,-1.498],[101.699,-1.274],[101.884,-1.133],[101.824,-0.978],[101.067,-0.504],[100.992,-0.316],[100.845,-0.343],[100.746,-0.052],[100.864,0.046],[100.779,0.083],[100.843,0.223],[100.686,0.189],[100.467,0.315],[100.461,0.412],[100.276,0.412],[100.198,0.626],[100.285,0.69],[100.181,0.762]]]},{"kode":14,"nama":"Riau","mikro":1118246,"kecil":41504,"menengah":13497,"besar":341,"total":1173588,"ukm":55001,"propUkm":0.04686568028984618,"bh":19986,"buku":5565,"formal":25551,"propFormal":0.021771695007106413,"btt":287745,"bt":216598,"rasioBT":0.4294656612662414,"umkm":1173247,"rings":[[[100.181,0.762],[100.285,0.69],[100.198,0.626],[100.276,0.412],[100.461,0.412],[100.467,0.315],[100.686,0.189],[100.843,0.223],[100.779,0.083],[100.864,0.046],[100.746,-0.052],[100.845,-0.343],[100.992,-0.316],[101.067,-0.504],[101.824,-0.978],[101.986,-0.881],[102.278,-0.916],[102.632,-1.124],[103.004,-0.755],[103.353,-0.799],[103.441,-0.732],[103.421,-0.522],[103.778,-0.346],[103.456,-0.184],[103.614,-0.006],[103.809,-0.011],[103.71,0.3],[103.326,0.545],[103.11,0.385],[102.915,0.713],[102.569,0.739],[102.423,0.8],[102.229,0.995],[102.149,1.377],[101.762,1.66],[101.393,1.713],[101.303,2.042],[101.046,2.292],[100.771,2.28],[100.763,2.086],[100.568,2.156],[100.396,2.321],[100.322,2.548],[100.373,2.224],[100.28,1.812],[100.39,1.76],[100.434,1.52],[100.053,1.38],[100.166,1.17],[100.122,0.821],[100.181,0.762]],[[102.569,0.768],[102.857,0.794],[103.02,0.686],[103.056,0.781],[102.734,1.022],[102.411,0.892],[102.437,0.826],[102.569,0.768]],[[102.894,0.961],[103.153,0.848],[102.893,1.125],[102.737,1.155],[102.623,1.018],[102.744,1.039],[102.894,0.961]],[[102.49,0.976],[102.607,1.005],[102.537,1.13],[102.461,1.082],[102.49,0.976]],[[102.225,1.243],[102.276,1.006],[102.393,0.913],[102.483,0.952],[102.439,1.071],[102.485,1.238],[102.272,1.419],[102.21,1.401],[102.225,1.243]],[[102.119,1.46],[102.286,1.433],[102.509,1.262],[102.46,1.518],[102.002,1.596],[102.119,1.46]],[[101.421,1.82],[101.526,1.704],[101.71,1.744],[101.785,1.942],[101.704,2.097],[101.406,2.021],[101.421,1.82]],[[103.206,0.52],[103.301,0.597],[103.206,0.702],[103.138,0.568],[103.206,0.52]]]},{"kode":15,"nama":"Jambi","mikro":722731,"kecil":23777,"menengah":10518,"besar":0,"total":757026,"ukm":34295,"propUkm":0.04530227495488926,"bh":8959,"buku":6565,"formal":15524,"propFormal":0.020506561201332582,"btt":251608,"bt":121873,"rasioBT":0.3263164658978636,"umkm":757026,"rings":[[[101.824,-0.978],[101.884,-1.133],[101.699,-1.274],[101.68,-1.498],[101.477,-1.677],[101.135,-1.684],[101.293,-2.289],[101.556,-2.448],[101.542,-2.571],[101.677,-2.533],[101.859,-2.731],[102.064,-2.769],[102.271,-2.624],[102.581,-2.678],[102.778,-2.554],[102.856,-2.334],[103.211,-2.32],[103.23,-2.136],[103.454,-2.36],[103.563,-2.042],[103.5,-1.96],[103.586,-1.862],[104.406,-1.629],[104.491,-1.668],[104.359,-1.019],[103.808,-1.014],[103.441,-0.732],[103.353,-0.799],[103.004,-0.755],[102.632,-1.124],[102.278,-0.916],[101.986,-0.881],[101.824,-0.978]]]},{"kode":16,"nama":"Sumatera Selatan","mikro":1728865,"kecil":33028,"menengah":20098,"besar":806,"total":1782797,"ukm":53126,"propUkm":0.02979924242636711,"bh":25469,"buku":9360,"formal":34829,"propFormal":0.019536155827051538,"btt":719766,"bt":134800,"rasioBT":0.15774088835736502,"umkm":1781991,"rings":[[[102.064,-2.769],[102.268,-3.043],[102.471,-3.087],[102.494,-3.268],[102.988,-3.369],[102.995,-3.525],[102.907,-3.616],[102.81,-3.53],[102.771,-3.708],[102.63,-3.809],[102.996,-4.019],[102.919,-4.093],[103.068,-4.257],[103.442,-4.33],[103.407,-4.501],[103.483,-4.577],[103.619,-4.531],[103.677,-4.718],[103.79,-4.779],[103.864,-4.917],[104.335,-4.872],[104.294,-4.657],[104.384,-4.347],[105.022,-4.166],[105.319,-3.733],[105.521,-3.839],[105.652,-4.087],[105.821,-4.157],[105.961,-3.824],[105.822,-3.638],[105.917,-3.384],[106.097,-3.238],[106.047,-2.995],[105.815,-2.921],[105.782,-2.69],[105.611,-2.598],[105.621,-2.391],[105.046,-2.376],[104.901,-2.279],[104.701,-2.361],[104.899,-2.105],[104.828,-2.004],[104.656,-1.965],[104.611,-2.006],[104.578,-2.005],[104.504,-1.969],[104.472,-1.865],[104.526,-1.712],[104.491,-1.668],[104.406,-1.629],[103.586,-1.862],[103.5,-1.96],[103.563,-2.042],[103.454,-2.36],[103.23,-2.136],[103.211,-2.32],[102.856,-2.334],[102.778,-2.554],[102.581,-2.678],[102.271,-2.624],[102.064,-2.769]],[[104.556,-1.855],[104.501,-1.947],[104.605,-2.0],[104.639,-1.917],[104.556,-1.855]]]},{"kode":17,"nama":"Bengkulu","mikro":451589,"kecil":11624,"menengah":5119,"besar":137,"total":468469,"ukm":16743,"propUkm":0.03573982483366028,"bh":4791,"buku":1641,"formal":6432,"propFormal":0.013729830575769155,"btt":200924,"bt":50823,"rasioBT":0.2018812537984564,"umkm":468332,"rings":[[[102.197,-5.416],[102.375,-5.485],[102.381,-5.386],[102.135,-5.295],[102.086,-5.34],[102.197,-5.416]],[[101.022,-2.478],[101.32,-2.736],[101.622,-3.245],[102.237,-3.684],[102.305,-3.987],[103.328,-4.808],[103.596,-4.922],[103.79,-4.779],[103.677,-4.718],[103.619,-4.531],[103.483,-4.577],[103.407,-4.501],[103.442,-4.33],[103.068,-4.257],[102.919,-4.093],[102.996,-4.019],[102.63,-3.809],[102.771,-3.708],[102.81,-3.53],[102.907,-3.616],[102.995,-3.525],[102.988,-3.369],[102.494,-3.268],[102.471,-3.087],[102.268,-3.043],[102.064,-2.769],[101.859,-2.731],[101.677,-2.533],[101.542,-2.571],[101.556,-2.448],[101.293,-2.289],[101.022,-2.478]]]},{"kode":18,"nama":"Lampung","mikro":1856723,"kecil":41638,"menengah":36492,"besar":1446,"total":1936299,"ukm":78130,"propUkm":0.04035017319122718,"bh":26430,"buku":9002,"formal":35432,"propFormal":0.01829882678243391,"btt":809249,"bt":184994,"rasioBT":0.18606517722528598,"umkm":1934853,"rings":[[[103.596,-4.922],[103.91,-5.126],[103.907,-5.233],[104.584,-5.943],[104.729,-5.933],[104.559,-5.514],[104.708,-5.522],[105.149,-5.809],[105.211,-5.771],[105.167,-5.606],[105.291,-5.447],[105.717,-5.904],[105.9,-4.923],[105.913,-4.439],[105.826,-4.352],[105.821,-4.157],[105.652,-4.087],[105.521,-3.839],[105.319,-3.733],[105.022,-4.166],[104.384,-4.347],[104.294,-4.657],[104.335,-4.872],[103.864,-4.917],[103.79,-4.779],[103.596,-4.922]]]},{"kode":19,"nama":"Kepulauan Bangka Belitung","mikro":313088,"kecil":10841,"menengah":3224,"besar":63,"total":327216,"ukm":14065,"propUkm":0.04298383942105521,"bh":2310,"buku":1343,"formal":3653,"propFormal":0.01116387951689404,"btt":68683,"bt":39488,"rasioBT":0.3650516312135415,"umkm":327153,"rings":[[[105.399,-2.127],[105.539,-2.079],[105.785,-2.166],[105.803,-2.367],[105.935,-2.481],[105.95,-2.819],[106.43,-2.974],[106.514,-3.113],[106.736,-3.087],[106.738,-3.005],[106.59,-2.919],[106.709,-2.643],[106.841,-2.572],[106.3,-2.421],[106.048,-1.601],[105.888,-1.502],[105.72,-1.542],[105.809,-1.814],[105.655,-1.745],[105.717,-1.654],[105.605,-1.53],[105.394,-1.606],[105.387,-1.801],[105.109,-2.023],[105.301,-2.154],[105.399,-2.127]],[[106.846,-2.918],[106.718,-2.97],[106.883,-3.03],[106.846,-2.918]],[[107.427,-2.929],[107.468,-2.823],[107.38,-2.849],[107.427,-2.929]],[[107.666,-3.214],[107.837,-3.157],[107.842,-3.063],[107.985,-3.271],[108.077,-3.246],[108.294,-2.879],[108.27,-2.751],[107.989,-2.572],[107.658,-2.56],[107.529,-2.921],[107.6,-2.933],[107.595,-3.224],[107.666,-3.214]]]},{"kode":21,"nama":"Kepulauan Riau","mikro":285451,"kecil":8773,"menengah":5547,"besar":142,"total":299913,"ukm":14320,"propUkm":0.04774718001553784,"bh":11890,"buku":5039,"formal":16929,"propFormal":0.05644636944713967,"btt":85443,"bt":40861,"rasioBT":0.32351311122371423,"umkm":299771,"rings":[[[103.463,0.647],[103.51,0.762],[103.377,0.896],[103.358,0.728],[103.463,0.647]],[[103.439,0.988],[103.351,1.135],[103.328,1.019],[103.439,0.988]],[[103.966,0.969],[103.834,1.018],[103.939,0.911],[103.966,0.969]],[[103.945,1.008],[104.133,1.034],[104.139,1.169],[103.922,1.143],[103.945,1.008]],[[104.262,0.8],[104.179,0.777],[104.255,0.693],[104.262,0.8]],[[104.238,0.864],[104.078,0.945],[104.181,0.783],[104.238,0.864]],[[104.259,-0.476],[104.366,-0.684],[104.441,-0.588],[104.504,-0.644],[104.6,-0.469],[104.478,-0.336],[104.327,-0.435],[104.326,-0.349],[104.259,-0.476]],[[104.44,-0.323],[104.475,-0.278],[104.391,-0.29],[104.44,-0.323]],[[104.23,1.053],[104.334,0.997],[104.448,1.054],[104.438,0.909],[104.557,0.814],[104.653,0.907],[104.585,1.227],[104.343,1.187],[104.23,1.053]],[[104.528,-0.269],[104.704,-0.205],[104.837,-0.315],[104.979,-0.282],[104.826,-0.133],[104.752,-0.19],[104.562,0.019],[104.427,-0.183],[104.528,-0.269]],[[105.787,2.904],[105.829,2.989],[105.696,3.044],[105.725,2.817],[105.787,2.904]],[[106.204,3.139],[106.285,3.099],[106.23,3.231],[106.204,3.139]],[[109.034,2.485],[109.117,2.522],[108.978,2.557],[109.034,2.485]],[[108.102,3.823],[108.254,3.761],[108.115,3.738],[108.152,3.633],[108.296,3.658],[108.397,3.827],[108.402,3.958],[108.219,4.23],[107.974,4.014],[108.102,3.823]]]},{"kode":31,"nama":"DKI Jakarta","mikro":1605051,"kecil":32862,"menengah":38177,"besar":3450,"total":1679540,"ukm":71039,"propUkm":0.04229670028698334,"bh":74492,"buku":33478,"formal":107970,"propFormal":0.06428545911380497,"btt":300821,"bt":166866,"rasioBT":0.35678990435911195,"umkm":1676090,"rings":[[[106.725,-6.09],[106.687,-6.172],[106.78,-6.317],[106.918,-6.35],[106.97,-6.091],[106.725,-6.09]]]},{"kode":32,"nama":"Jawa Barat","mikro":8793797,"kecil":147794,"menengah":159885,"besar":11316,"total":9112792,"ukm":307679,"propUkm":0.03376341740270161,"bh":163400,"buku":67893,"formal":231293,"propFormal":0.025381134563369823,"btt":2717545,"bt":743766,"rasioBT":0.21487985332725085,"umkm":9101476,"rings":[[[106.397,-6.978],[106.542,-6.984],[106.371,-7.28],[106.524,-7.408],[107.443,-7.507],[107.847,-7.737],[108.345,-7.818],[108.496,-7.793],[108.517,-7.699],[108.801,-7.673],[108.676,-7.358],[108.557,-7.287],[108.562,-7.171],[108.767,-7.113],[108.831,-6.785],[108.598,-6.758],[108.535,-6.481],[108.362,-6.261],[108.211,-6.236],[108.098,-6.329],[107.898,-6.188],[107.679,-6.237],[107.473,-6.149],[107.346,-5.972],[107.008,-5.921],[106.97,-6.091],[106.918,-6.35],[106.78,-6.317],[106.427,-6.348],[106.429,-6.68],[106.526,-6.768],[106.397,-6.978]]]},{"kode":33,"nama":"Jawa Tengah","mikro":8133961,"kecil":141415,"menengah":118536,"besar":14449,"total":8408361,"ukm":259951,"propUkm":0.03091577538119498,"bh":72813,"buku":42127,"formal":114940,"propFormal":0.013669727072850465,"btt":3066317,"bt":736298,"rasioBT":0.19362938398970184,"umkm":8393912,"rings":[[[108.869,-7.704],[108.792,-7.694],[109.05,-7.775],[108.869,-7.704]],[[108.801,-7.673],[109.0,-7.744],[109.292,-7.701],[110.004,-7.888],[110.116,-7.674],[110.274,-7.701],[110.445,-7.541],[110.492,-7.767],[110.786,-7.817],[110.756,-8.024],[110.835,-8.203],[110.9,-8.211],[110.953,-8.062],[111.112,-8.063],[111.154,-7.922],[111.297,-7.877],[111.182,-7.691],[111.15,-7.26],[111.453,-7.371],[111.455,-7.257],[111.612,-7.138],[111.577,-6.917],[111.691,-6.754],[111.493,-6.621],[111.382,-6.702],[111.154,-6.657],[111.046,-6.427],[110.901,-6.404],[110.714,-6.458],[110.456,-6.954],[110.322,-6.967],[110.179,-6.848],[109.974,-6.924],[109.507,-6.791],[109.304,-6.872],[109.098,-6.838],[109.066,-6.759],[108.831,-6.785],[108.767,-7.113],[108.562,-7.171],[108.557,-7.287],[108.676,-7.358],[108.801,-7.673]]]},{"kode":34,"nama":"DI Yogyakarta","mikro":842801,"kecil":21003,"menengah":11695,"besar":1062,"total":876561,"ukm":32698,"propUkm":0.03730259502761359,"bh":18947,"buku":2682,"formal":21629,"propFormal":0.024674837233233056,"btt":345047,"bt":77286,"rasioBT":0.18299777663597208,"umkm":875499,"rings":[[[110.004,-7.888],[110.835,-8.203],[110.756,-8.024],[110.786,-7.817],[110.492,-7.767],[110.445,-7.541],[110.274,-7.701],[110.116,-7.674],[110.004,-7.888]]]},{"kode":35,"nama":"Jawa Timur","mikro":9139593,"kecil":192169,"menengah":140465,"besar":3979,"total":9476206,"ukm":332634,"propUkm":0.03510202289819364,"bh":95103,"buku":45763,"formal":140866,"propFormal":0.014865231929318549,"btt":3685097,"bt":855937,"rasioBT":0.1884894497596803,"umkm":9472227,"rings":[[[110.9,-8.211],[111.426,-8.259],[111.683,-8.375],[111.795,-8.255],[112.651,-8.448],[113.238,-8.285],[113.961,-8.617],[114.249,-8.6],[114.373,-8.678],[114.345,-8.742],[114.595,-8.75],[114.352,-8.53],[114.453,-7.804],[114.101,-7.702],[114.047,-7.609],[113.751,-7.736],[113.15,-7.739],[112.889,-7.616],[112.846,-7.286],[112.66,-7.208],[112.556,-6.847],[112.123,-6.903],[111.961,-6.761],[111.691,-6.754],[111.577,-6.917],[111.612,-7.138],[111.455,-7.257],[111.453,-7.371],[111.15,-7.26],[111.182,-7.691],[111.297,-7.877],[111.154,-7.922],[111.112,-8.063],[110.953,-8.062],[110.9,-8.211]],[[112.594,-5.854],[112.718,-5.843],[112.726,-5.737],[112.615,-5.749],[112.594,-5.854]],[[113.299,-8.445],[113.269,-8.497],[113.41,-8.48],[113.299,-8.445]],[[112.692,-7.154],[113.513,-7.253],[113.607,-7.126],[113.886,-7.134],[113.892,-7.061],[114.124,-6.979],[113.908,-6.863],[112.858,-6.894],[112.683,-7.032],[112.692,-7.154]],[[115.353,-6.942],[115.571,-6.942],[115.244,-6.828],[115.203,-6.937],[115.404,-6.988],[115.353,-6.942]],[[115.79,-7.116],[115.755,-7.172],[115.893,-7.192],[115.902,-7.127],[115.79,-7.116]]]},{"kode":36,"nama":"Banten","mikro":1649997,"kecil":35867,"menengah":26753,"besar":3771,"total":1716388,"ukm":62620,"propUkm":0.03648359228799083,"bh":48234,"buku":22541,"formal":70775,"propFormal":0.041234848996846866,"btt":550619,"bt":144553,"rasioBT":0.2079384670268653,"umkm":1712617,"rings":[[[105.262,-6.522],[105.121,-6.59],[105.17,-6.663],[105.262,-6.522]],[[106.725,-6.09],[106.679,-6.013],[106.486,-6.048],[106.35,-5.964],[106.169,-6.028],[106.019,-5.891],[105.881,-6.077],[105.772,-6.516],[105.65,-6.481],[105.468,-6.828],[105.375,-6.655],[105.23,-6.756],[105.267,-6.844],[105.538,-6.874],[105.993,-6.814],[106.397,-6.978],[106.526,-6.768],[106.429,-6.68],[106.427,-6.348],[106.78,-6.317],[106.687,-6.172],[106.725,-6.09]]]},{"kode":51,"nama":"Bali","mikro":923656,"kecil":24861,"menengah":15804,"besar":1518,"total":965839,"ukm":40665,"propUkm":0.04210329050700997,"bh":14833,"buku":9809,"formal":24642,"propFormal":0.025513569031691618,"btt":300543,"bt":94416,"rasioBT":0.23905266116229787,"umkm":964321,"rings":[[[114.926,-8.472],[115.165,-8.704],[115.087,-8.836],[115.171,-8.849],[115.27,-8.654],[115.71,-8.378],[115.184,-8.062],[114.862,-8.196],[114.439,-8.095],[114.587,-8.401],[114.926,-8.472]],[[115.485,-8.76],[115.629,-8.77],[115.563,-8.672],[115.485,-8.76]]]},{"kode":52,"nama":"Nusa Tenggara Barat","mikro":1265398,"kecil":13173,"menengah":13905,"besar":263,"total":1292739,"ukm":27078,"propUkm":0.020946223483626625,"bh":7483,"buku":5750,"formal":13233,"propFormal":0.010236405028393201,"btt":532228,"bt":82322,"rasioBT":0.1339549263688878,"umkm":1292476,"rings":[[[116.107,-8.873],[116.376,-8.956],[116.41,-8.842],[116.472,-8.827],[116.436,-8.92],[116.57,-8.891],[116.495,-8.814],[116.718,-8.348],[116.349,-8.211],[116.099,-8.363],[116.033,-8.446],[116.078,-8.729],[115.824,-8.763],[116.004,-8.903],[116.107,-8.873]],[[116.948,-9.057],[117.057,-9.104],[118.127,-8.878],[118.397,-8.619],[118.412,-8.868],[118.75,-8.796],[118.904,-8.843],[118.909,-8.765],[118.712,-8.741],[118.908,-8.68],[119.128,-8.752],[119.184,-8.588],[119.036,-8.642],[119.004,-8.314],[118.8,-8.287],[118.661,-8.531],[118.646,-8.29],[118.462,-8.249],[118.28,-8.365],[118.147,-8.141],[117.924,-8.08],[117.692,-8.238],[118.227,-8.551],[118.274,-8.653],[117.804,-8.727],[117.567,-8.409],[117.393,-8.472],[117.106,-8.373],[116.759,-8.674],[116.813,-8.819],[116.739,-8.997],[116.948,-9.057]],[[117.685,-8.187],[117.482,-8.186],[117.471,-8.357],[117.528,-8.389],[117.685,-8.187]],[[119.071,-8.131],[119.001,-8.177],[119.051,-8.262],[119.124,-8.189],[119.071,-8.131]]]},{"kode":53,"nama":"Nusa Tenggara Timur","mikro":1296279,"kecil":11453,"menengah":7196,"besar":281,"total":1315209,"ukm":18649,"propUkm":0.014179495426202223,"bh":15792,"buku":5226,"formal":21018,"propFormal":0.015980730058872773,"btt":618307,"bt":46547,"rasioBT":0.07001085952705406,"umkm":1314928,"rings":[[[119.463,-8.435],[119.384,-8.624],[119.437,-8.75],[119.572,-8.506],[119.463,-8.435]],[[119.643,-8.61],[119.604,-8.754],[119.696,-8.809],[119.794,-8.615],[119.672,-8.686],[119.643,-8.61]],[[119.331,-9.763],[119.671,-9.781],[120.167,-10.237],[120.454,-10.313],[120.839,-10.097],[120.597,-9.731],[120.46,-9.616],[120.245,-9.634],[120.21,-9.491],[120.078,-9.464],[119.935,-9.276],[119.806,-9.394],[119.302,-9.357],[118.965,-9.482],[118.927,-9.55],[119.026,-9.675],[119.331,-9.763]],[[121.583,-10.637],[121.63,-10.598],[121.52,-10.633],[121.583,-10.637]],[[120.009,-8.818],[120.599,-8.816],[120.754,-8.893],[120.838,-8.829],[121.03,-8.956],[121.342,-8.905],[121.389,-8.789],[121.774,-8.883],[122.116,-8.729],[122.377,-8.752],[122.819,-8.597],[122.784,-8.431],[122.89,-8.447],[123.018,-8.281],[122.866,-8.063],[122.731,-8.217],[122.901,-8.179],[122.893,-8.277],[122.491,-8.473],[122.479,-8.604],[122.296,-8.642],[122.002,-8.45],[121.618,-8.473],[121.517,-8.616],[120.977,-8.347],[120.428,-8.241],[120.201,-8.305],[120.113,-8.438],[120.022,-8.382],[119.877,-8.458],[119.801,-8.763],[119.889,-8.858],[120.009,-8.818]],[[121.755,-10.613],[121.986,-10.551],[122.0,-10.444],[121.852,-10.442],[121.685,-10.575],[121.755,-10.613]],[[122.833,-10.93],[123.223,-10.827],[123.401,-10.687],[123.405,-10.455],[123.213,-10.58],[123.31,-10.593],[122.81,-10.782],[122.833,-10.93]],[[122.944,-8.583],[123.164,-8.431],[122.976,-8.436],[122.87,-8.584],[122.944,-8.583]],[[122.999,-8.406],[123.295,-8.388],[123.334,-8.264],[123.143,-8.239],[122.999,-8.406]],[[123.352,-10.306],[123.403,-10.339],[123.397,-10.204],[123.503,-10.183],[123.451,-10.114],[123.301,-10.271],[123.352,-10.306]],[[123.516,-10.34],[123.789,-10.356],[124.139,-10.161],[124.478,-10.122],[124.983,-9.635],[125.086,-9.463],[124.983,-9.191],[125.175,-9.174],[125.181,-9.021],[125.117,-8.97],[124.984,-9.066],[124.927,-8.966],[124.478,-9.176],[124.355,-9.485],[124.217,-9.366],[124.099,-9.409],[124.078,-9.327],[123.795,-9.491],[123.579,-9.943],[123.586,-10.035],[123.771,-10.043],[123.489,-10.224],[123.455,-10.349],[123.516,-10.34]],[[123.289,-8.548],[123.559,-8.562],[123.619,-8.407],[123.923,-8.244],[123.792,-8.172],[123.686,-8.259],[123.607,-8.221],[123.567,-8.365],[123.5,-8.351],[123.558,-8.241],[123.389,-8.26],[123.464,-8.347],[123.212,-8.511],[123.289,-8.548]],[[124.102,-8.544],[124.302,-8.33],[124.323,-8.184],[124.091,-8.374],[124.059,-8.293],[123.964,-8.35],[123.914,-8.437],[124.034,-8.421],[124.102,-8.544]],[[124.471,-8.434],[125.124,-8.338],[125.134,-8.219],[125.085,-8.146],[124.609,-8.197],[124.598,-8.123],[124.472,-8.132],[124.407,-8.271],[124.542,-8.238],[124.337,-8.42],[124.471,-8.434]]]},{"kode":61,"nama":"Kalimantan Barat","mikro":1092969,"kecil":22254,"menengah":14299,"besar":451,"total":1129973,"ukm":36553,"propUkm":0.03234856054082708,"bh":9102,"buku":4340,"formal":13442,"propFormal":0.011895859458588834,"btt":407785,"bt":113481,"rasioBT":0.21770267003794608,"umkm":1129522,"rings":[[[108.952,-1.566],[108.799,-1.572],[108.831,-1.666],[108.958,-1.639],[108.952,-1.566]],[[109.13,-0.203],[109.056,-0.227],[109.094,-0.331],[109.083,-0.27],[109.193,-0.219],[109.13,-0.203]],[[109.18,-0.12],[109.164,-0.061],[109.176,-0.194],[109.18,-0.12]],[[109.367,-0.878],[109.304,-0.902],[109.406,-0.932],[109.367,-0.878]],[[109.241,-0.82],[109.3,-0.9],[109.429,-0.856],[109.557,-0.888],[109.683,-1.014],[109.744,-0.901],[109.558,-0.748],[109.249,-0.661],[109.241,-0.82]],[[109.684,-1.207],[109.78,-1.145],[109.756,-1.015],[109.718,-0.989],[109.686,-1.019],[109.638,-0.987],[109.552,-1.003],[109.488,-0.974],[109.38,-1.255],[109.504,-1.308],[109.684,-1.207]],[[114.206,1.41],[113.975,1.45],[113.633,1.219],[113.538,1.323],[112.981,1.408],[113.034,1.566],[112.486,1.58],[112.212,1.45],[112.143,1.135],[111.935,1.122],[111.818,0.986],[111.668,1.043],[111.521,0.958],[111.489,1.035],[111.232,1.086],[110.553,0.86],[110.276,0.997],[110.193,1.183],[110.065,1.209],[109.963,1.403],[109.838,1.422],[109.662,1.617],[109.685,1.782],[109.586,1.792],[109.54,1.926],[109.625,2.065],[109.338,1.943],[109.252,1.66],[109.041,1.485],[108.979,1.185],[108.903,1.163],[108.97,0.942],[108.841,0.815],[108.929,0.624],[108.913,0.34],[109.087,0.251],[109.194,0.061],[109.194,-0.222],[109.09,-0.274],[109.114,-0.504],[109.668,-0.684],[109.635,-0.796],[109.758,-0.904],[109.732,-0.988],[109.94,-1.124],[109.907,-1.204],[110.048,-1.323],[110.033,-1.664],[109.902,-1.831],[110.104,-1.991],[110.086,-2.242],[110.257,-2.956],[110.564,-2.839],[110.627,-3.029],[110.733,-2.996],[111.174,-2.688],[111.116,-2.327],[111.025,-2.226],[111.101,-1.989],[110.965,-1.91],[111.022,-1.714],[110.887,-1.6],[111.2,-1.475],[111.549,-1.207],[111.641,-0.968],[112.083,-0.701],[112.175,-0.726],[112.216,-0.613],[112.311,-0.721],[112.562,-0.695],[113.131,-0.452],[113.218,-0.506],[113.22,-0.334],[113.443,-0.064],[113.287,0.249],[113.553,0.333],[113.842,0.658],[113.926,0.841],[113.89,1.048],[114.128,1.157],[114.206,1.41]]]},{"kode":62,"nama":"Kalimantan Tengah","mikro":493449,"kecil":12628,"menengah":7059,"besar":253,"total":513389,"ukm":19687,"propUkm":0.038347140277645214,"bh":8607,"buku":2911,"formal":11518,"propFormal":0.022435229426419342,"btt":161462,"bt":56949,"rasioBT":0.260742361877378,"umkm":513136,"rings":[[[110.733,-2.996],[110.977,-3.066],[111.412,-2.903],[111.555,-3.011],[111.718,-2.847],[111.825,-3.051],[111.772,-3.509],[111.841,-3.539],[112.256,-3.314],[112.563,-3.447],[113.009,-3.16],[112.945,-3.102],[113.047,-2.974],[113.337,-3.275],[113.6,-3.166],[113.628,-3.465],[114.047,-3.319],[114.352,-3.464],[114.598,-2.816],[114.762,-2.72],[114.935,-2.442],[115.296,-2.216],[115.416,-2.013],[115.441,-1.942],[115.308,-1.849],[115.391,-1.52],[115.759,-1.313],[115.842,-1.096],[115.766,-1.138],[115.554,-0.86],[115.376,-0.875],[115.288,-0.795],[115.381,-0.572],[115.29,-0.555],[115.234,-0.363],[115.309,-0.08],[115.166,-0.087],[114.981,-0.275],[114.892,-0.026],[114.709,0.074],[114.903,0.318],[115.124,0.37],[114.986,0.732],[114.658,0.699],[114.364,0.53],[114.203,0.54],[114.123,0.695],[113.842,0.658],[113.553,0.333],[113.287,0.249],[113.443,-0.064],[113.22,-0.334],[113.218,-0.506],[113.131,-0.452],[112.562,-0.695],[112.311,-0.721],[112.216,-0.613],[112.175,-0.726],[112.083,-0.701],[111.641,-0.968],[111.549,-1.207],[111.2,-1.475],[110.887,-1.6],[111.022,-1.714],[110.965,-1.91],[111.101,-1.989],[111.025,-2.226],[111.116,-2.327],[111.174,-2.688],[110.733,-2.996]]]},{"kode":63,"nama":"Kalimantan Selatan","mikro":860520,"kecil":16146,"menengah":11883,"besar":139,"total":888688,"ukm":28029,"propUkm":0.03153975298417443,"bh":10400,"buku":2032,"formal":12432,"propFormal":0.013989161550510415,"btt":261910,"bt":76439,"rasioBT":0.22591761760785461,"umkm":888549,"rings":[[[114.352,-3.464],[114.615,-3.649],[114.642,-4.175],[115.966,-3.61],[116.031,-3.364],[116.267,-3.111],[116.089,-2.988],[116.14,-2.832],[116.15,-2.936],[116.27,-3.003],[116.409,-2.59],[116.317,-2.531],[116.511,-2.562],[116.555,-2.409],[116.162,-2.307],[115.835,-2.39],[115.808,-2.061],[115.695,-2.04],[115.728,-1.797],[115.619,-1.488],[115.759,-1.313],[115.391,-1.52],[115.308,-1.849],[115.441,-1.942],[115.416,-2.013],[115.296,-2.216],[114.935,-2.442],[114.762,-2.72],[114.598,-2.816],[114.352,-3.464]],[[116.1,-4.06],[116.31,-3.915],[116.257,-3.21],[116.114,-3.308],[116.002,-3.638],[116.1,-4.06]],[[116.403,-3.595],[116.409,-3.361],[116.313,-3.551],[116.362,-3.652],[116.403,-3.595]]]},{"kode":64,"nama":"Kalimantan Timur","mikro":619869,"kecil":16677,"menengah":14595,"besar":374,"total":651515,"ukm":31272,"propUkm":0.04799889488346393,"bh":21705,"buku":3958,"formal":25663,"propFormal":0.03938973009063491,"btt":191514,"bt":77751,"rasioBT":0.2887527157261434,"umkm":651141,"rings":[[[113.842,0.658],[114.123,0.695],[114.203,0.54],[114.364,0.53],[114.658,0.699],[114.986,0.732],[115.124,0.37],[114.903,0.318],[114.709,0.074],[114.892,-0.026],[114.981,-0.275],[115.166,-0.087],[115.309,-0.08],[115.234,-0.363],[115.29,-0.555],[115.381,-0.572],[115.288,-0.795],[115.376,-0.875],[115.554,-0.86],[115.766,-1.138],[115.842,-1.096],[115.759,-1.313],[115.619,-1.488],[115.728,-1.797],[115.695,-2.04],[115.808,-2.061],[115.835,-2.39],[116.162,-2.307],[116.555,-2.409],[116.587,-2.172],[116.4,-2.214],[116.36,-2.111],[116.458,-2.062],[116.45,-1.773],[116.246,-1.779],[116.558,-1.602],[116.556,-1.448],[116.762,-1.362],[116.722,-1.039],[116.811,-1.282],[116.884,-1.277],[117.249,-0.907],[117.276,-0.577],[117.453,-0.462],[117.42,-0.213],[117.518,-0.032],[117.559,0.418],[117.752,0.756],[117.915,0.836],[118.025,0.777],[117.895,1.123],[118.065,0.904],[118.368,0.806],[118.795,0.802],[118.987,0.985],[117.911,1.821],[117.822,2.011],[117.702,2.036],[117.69,2.181],[118.021,2.198],[118.098,2.285],[117.988,2.435],[117.747,2.327],[117.613,2.52],[117.388,2.56],[117.23,2.48],[117.215,2.565],[117.048,2.548],[116.982,2.433],[116.795,2.509],[116.714,2.391],[116.504,2.455],[116.477,2.292],[116.29,2.236],[116.347,2.162],[116.22,2.093],[116.162,1.744],[116.041,1.557],[115.764,1.259],[115.487,1.252],[115.381,1.118],[115.099,1.199],[114.902,1.419],[114.722,1.313],[114.565,1.426],[114.387,1.519],[114.206,1.41],[114.128,1.157],[113.89,1.048],[113.926,0.841],[113.842,0.658]],[[117.375,-0.718],[117.301,-0.629],[117.436,-0.87],[117.375,-0.718]],[[117.417,-0.623],[117.285,-0.583],[117.475,-0.665],[117.417,-0.623]],[[117.508,-0.445],[117.537,-0.394],[117.466,-0.482],[117.508,-0.445]],[[117.5,-0.43],[117.518,-0.35],[117.465,-0.481],[117.5,-0.43]],[[117.505,-0.546],[117.552,-0.598],[117.586,-0.522],[117.505,-0.546]],[[117.804,2.153],[117.73,2.168],[117.731,2.089],[117.804,2.153]],[[117.89,2.155],[117.802,2.184],[117.948,2.115],[117.89,2.155]]]},{"kode":65,"nama":"Kalimantan Utara","mikro":131887,"kecil":2769,"menengah":1467,"besar":0,"total":136123,"ukm":4236,"propUkm":0.03111891451114066,"bh":4721,"buku":1358,"formal":6079,"propFormal":0.04465814006450049,"btt":48462,"bt":15262,"rasioBT":0.23950160065281526,"umkm":136123,"rings":[[[114.565,1.426],[114.722,1.313],[114.902,1.419],[115.099,1.199],[115.381,1.118],[115.487,1.252],[115.764,1.259],[116.041,1.557],[116.162,1.744],[116.22,2.093],[116.347,2.162],[116.29,2.236],[116.477,2.292],[116.504,2.455],[116.714,2.391],[116.795,2.509],[116.982,2.433],[117.048,2.548],[117.215,2.565],[117.23,2.48],[117.388,2.56],[117.613,2.52],[117.747,2.327],[117.988,2.435],[117.691,2.785],[117.69,2.959],[117.576,2.981],[117.627,3.051],[117.435,3.052],[117.444,3.162],[117.322,3.163],[117.523,3.301],[117.218,3.493],[117.226,3.604],[117.016,3.596],[117.428,3.625],[117.486,3.717],[117.669,3.616],[117.811,3.703],[117.687,3.767],[117.784,3.755],[117.705,3.859],[117.458,3.93],[117.416,4.14],[117.516,4.099],[117.593,4.172],[117.468,4.174],[117.248,4.374],[117.021,4.319],[116.564,4.391],[116.44,4.288],[116.348,4.39],[116.177,4.381],[116.072,4.277],[115.877,4.392],[115.566,3.92],[115.657,3.439],[115.543,3.358],[115.562,3.152],[115.394,2.98],[115.284,3.047],[115.098,2.828],[115.154,2.793],[115.088,2.616],[115.249,2.509],[114.741,2.191],[114.881,1.92],[114.706,1.821],[114.705,1.637],[114.565,1.426]],[[117.252,3.588],[117.231,3.497],[117.518,3.482],[117.252,3.588]],[[117.585,3.293],[117.648,3.241],[117.666,3.415],[117.549,3.442],[117.585,3.293]],[[117.538,4.026],[117.443,4.006],[117.462,3.93],[117.682,3.888],[117.538,4.026]],[[117.747,4.046],[117.669,4.144],[117.589,4.08],[117.669,3.966],[117.747,4.046]],[[117.925,4.061],[117.901,4.167],[117.683,4.167],[117.925,4.061]]]},{"kode":71,"nama":"Sulawesi Utara","mikro":511965,"kecil":9365,"menengah":4419,"besar":359,"total":526108,"ukm":13784,"propUkm":0.026199943737787678,"bh":5443,"buku":2390,"formal":7833,"propFormal":0.014888578010598584,"btt":152254,"bt":43252,"rasioBT":0.22123106196229272,"umkm":525749,"rings":[[[123.474,0.32],[124.512,0.474],[124.64,0.793],[124.885,0.971],[125.078,1.366],[125.229,1.463],[125.165,1.688],[124.98,1.748],[124.806,1.576],[124.816,1.458],[124.532,1.353],[124.577,1.188],[124.384,1.18],[124.297,1.01],[123.935,0.836],[123.121,0.925],[123.271,0.803],[123.274,0.698],[123.533,0.575],[123.474,0.32]],[[125.373,2.675],[125.432,2.649],[125.432,2.806],[125.373,2.675]],[[125.498,3.468],[125.606,3.372],[125.676,3.427],[125.557,3.666],[125.427,3.735],[125.498,3.468]],[[126.782,3.75],[126.851,3.754],[126.753,3.854],[126.782,3.75]],[[126.692,3.998],[126.791,4.017],[126.911,4.271],[126.856,4.483],[126.738,4.544],[126.681,4.334],[126.791,4.215],[126.692,3.998]]]},{"kode":72,"nama":"Sulawesi Tengah","mikro":701093,"kecil":11194,"menengah":7377,"besar":0,"total":719664,"ukm":18571,"propUkm":0.025805097934591698,"bh":6697,"buku":6580,"formal":13277,"propFormal":0.01844888725849841,"btt":312177,"bt":59759,"rasioBT":0.1606701152886518,"umkm":719664,"rings":[[[119.561,-0.85],[119.593,-1.125],[119.428,-1.339],[119.684,-1.443],[119.672,-1.546],[119.872,-1.783],[119.87,-2.018],[120.073,-1.948],[120.29,-2.039],[120.42,-1.979],[120.743,-2.242],[121.108,-2.281],[121.105,-2.4],[121.469,-2.415],[121.784,-2.642],[121.67,-2.9],[122.261,-3.1],[122.311,-3.273],[122.486,-3.18],[122.252,-3.027],[122.321,-2.921],[122.011,-2.72],[121.825,-2.294],[121.551,-2.168],[121.414,-1.912],[121.339,-1.986],[121.304,-1.794],[121.676,-1.946],[121.846,-1.698],[122.39,-1.495],[122.804,-0.941],[123.103,-0.837],[123.257,-1.035],[123.352,-1.034],[123.438,-0.718],[123.263,-0.58],[123.058,-0.564],[122.744,-0.677],[122.961,-0.754],[122.202,-0.788],[122.101,-0.962],[121.947,-0.997],[121.719,-0.953],[121.634,-0.807],[121.336,-1.065],[121.099,-1.438],[120.823,-1.354],[120.676,-1.415],[120.507,-0.997],[120.412,-0.924],[120.31,-0.966],[120.084,-0.689],[120.033,-0.077],[120.135,0.192],[120.373,0.461],[120.647,0.522],[121.081,0.398],[121.337,0.474],[121.329,0.575],[121.166,0.669],[121.218,0.791],[121.864,0.991],[122.015,0.909],[122.196,1.039],[121.55,1.065],[121.42,1.186],[121.464,1.306],[121.255,1.23],[120.903,1.356],[120.808,1.325],[120.809,1.028],[120.636,0.939],[120.591,0.757],[120.399,0.791],[120.285,0.986],[120.231,0.793],[120.04,0.712],[120.045,0.513],[119.883,0.46],[119.899,0.217],[119.783,0.227],[119.879,0.076],[119.842,-0.098],[119.605,-0.011],[119.673,-0.119],[119.81,-0.136],[119.759,-0.49],[119.878,-0.864],[119.724,-0.661],[119.561,-0.85]],[[121.669,-0.575],[121.736,-0.496],[121.886,-0.54],[121.915,-0.442],[121.756,-0.426],[121.669,-0.575]],[[121.976,-0.423],[122.059,-0.348],[121.859,-0.378],[121.976,-0.423]],[[122.383,-0.365],[122.383,-0.283],[122.228,-0.214],[122.383,-0.365]],[[123.123,-3.612],[123.16,-3.559],[123.043,-3.594],[123.123,-3.612]],[[122.882,-1.6],[123.137,-1.299],[123.185,-1.514],[123.099,-1.601],[123.242,-1.648],[123.257,-1.442],[123.457,-1.518],[123.555,-1.277],[123.364,-1.227],[123.247,-1.39],[123.188,-1.15],[122.912,-1.18],[122.787,-1.447],[122.882,-1.6]],[[123.489,-1.706],[123.613,-1.699],[123.544,-1.488],[123.489,-1.706]]]},{"kode":73,"nama":"Sulawesi Selatan","mikro":1877069,"kecil":39198,"menengah":33025,"besar":650,"total":1949942,"ukm":72223,"propUkm":0.03703853755650168,"bh":19494,"buku":9738,"formal":29232,"propFormal":0.014991215123321617,"btt":790303,"bt":162985,"rasioBT":0.17097141682261813,"umkm":1949292,"rings":[[[120.924,-7.283],[120.795,-7.272],[121.064,-7.301],[120.924,-7.283]],[[120.773,-7.118],[120.62,-7.006],[120.635,-7.129],[120.773,-7.118]],[[120.441,-6.193],[120.481,-6.489],[120.568,-6.056],[120.497,-5.769],[120.441,-6.193]],[[119.474,-3.502],[119.453,-3.713],[119.633,-3.967],[119.636,-4.318],[119.482,-4.751],[119.525,-4.924],[119.354,-5.326],[119.418,-5.56],[119.705,-5.703],[119.93,-5.547],[120.13,-5.588],[120.312,-5.507],[120.464,-5.608],[120.271,-5.142],[120.306,-4.868],[120.452,-4.657],[120.348,-4.425],[120.338,-4.092],[120.439,-3.746],[120.421,-3.265],[120.256,-3.161],[120.19,-2.975],[120.75,-2.622],[121.08,-2.7],[121.01,-2.866],[121.082,-2.773],[121.39,-3.015],[121.67,-2.9],[121.784,-2.642],[121.469,-2.415],[121.105,-2.4],[121.108,-2.281],[120.743,-2.242],[120.42,-1.979],[120.29,-2.039],[120.073,-1.948],[119.87,-2.018],[119.678,-2.28],[119.762,-2.583],[119.748,-2.714],[119.578,-2.754],[119.633,-3.11],[119.387,-3.217],[119.474,-3.502]],[[121.1,-7.397],[121.166,-7.35],[121.083,-7.304],[121.1,-7.397]]]},{"kode":74,"nama":"Sulawesi Tenggara","mikro":579812,"kecil":9005,"menengah":5680,"besar":257,"total":594754,"ukm":14685,"propUkm":0.024690880599373858,"bh":4639,"buku":0,"formal":4639,"propFormal":0.007799863472965293,"btt":240211,"bt":38410,"rasioBT":0.13785751971315874,"umkm":594497,"rings":[[[121.842,-5.335],[121.947,-5.484],[122.046,-5.454],[122.062,-5.205],[121.958,-5.06],[121.841,-5.108],[121.842,-5.335]],[[121.01,-2.866],[121.09,-2.923],[121.056,-3.184],[120.865,-3.436],[120.88,-3.529],[121.345,-3.987],[121.609,-4.066],[121.47,-4.672],[121.684,-4.851],[122.023,-4.893],[122.093,-4.825],[122.067,-4.587],[122.22,-4.479],[122.589,-4.397],[122.741,-4.51],[122.674,-4.327],[122.821,-4.443],[122.892,-4.398],[122.854,-4.07],[122.679,-4.159],[122.658,-4.007],[122.539,-3.968],[122.666,-3.897],[122.526,-3.895],[122.444,-3.751],[122.195,-3.608],[122.279,-3.553],[122.281,-3.364],[122.38,-3.449],[122.311,-3.273],[122.261,-3.1],[121.67,-2.9],[121.39,-3.015],[121.082,-2.773],[121.01,-2.866]],[[122.331,-5.396],[122.384,-5.321],[122.463,-5.403],[122.524,-5.277],[122.52,-5.438],[122.64,-5.356],[122.588,-5.16],[122.766,-4.899],[122.698,-4.616],[122.318,-4.831],[122.382,-5.088],[122.266,-5.327],[122.331,-5.396]],[[122.573,-5.536],[122.637,-5.695],[122.702,-5.63],[122.785,-5.702],[122.896,-5.565],[122.872,-5.455],[123.218,-5.301],[123.043,-5.142],[122.921,-5.175],[123.028,-4.764],[123.139,-4.723],[123.213,-4.859],[123.08,-4.367],[122.868,-4.526],[122.752,-5.032],[122.747,-5.217],[122.811,-5.221],[122.656,-5.324],[122.573,-5.536]],[[123.593,-5.386],[123.645,-5.296],[123.533,-5.248],[123.593,-5.386]],[[123.088,-4.797],[123.039,-4.833],[123.114,-4.847],[123.088,-4.797]],[[122.941,-4.103],[123.121,-4.261],[123.259,-4.093],[123.013,-3.978],[122.941,-4.103]],[[123.936,-5.778],[123.996,-5.77],[123.904,-5.72],[123.936,-5.778]]]},{"kode":75,"nama":"Gorontalo","mikro":262423,"kecil":2087,"menengah":5012,"besar":205,"total":269727,"ukm":7099,"propUkm":0.026319204232427604,"bh":2004,"buku":1569,"formal":3573,"propFormal":0.013246727246438066,"btt":100424,"bt":15925,"rasioBT":0.1368726847673809,"umkm":269522,"rings":[[[121.337,0.474],[121.524,0.549],[121.813,0.42],[122.397,0.52],[123.063,0.506],[123.268,0.322],[123.474,0.32],[123.533,0.575],[123.274,0.698],[123.271,0.803],[123.121,0.925],[122.94,0.958],[122.83,0.819],[122.453,1.031],[122.196,1.039],[122.015,0.909],[121.864,0.991],[121.218,0.791],[121.166,0.669],[121.329,0.575],[121.337,0.474]]]},{"kode":76,"nama":"Sulawesi Barat","mikro":361371,"kecil":4912,"menengah":1636,"besar":0,"total":367919,"ukm":6548,"propUkm":0.01779739562240602,"bh":2305,"buku":102,"formal":2407,"propFormal":0.006542200864864277,"btt":164905,"bt":22531,"rasioBT":0.12020636377216756,"umkm":367919,"rings":[[[119.561,-0.85],[119.303,-1.274],[119.282,-1.689],[119.363,-1.861],[119.212,-1.997],[119.138,-2.476],[118.924,-2.66],[118.823,-2.622],[118.757,-2.785],[118.77,-2.867],[118.881,-2.881],[118.778,-3.081],[118.907,-3.525],[118.993,-3.563],[119.31,-3.426],[119.474,-3.502],[119.387,-3.217],[119.633,-3.11],[119.578,-2.754],[119.748,-2.714],[119.762,-2.583],[119.678,-2.28],[119.87,-2.018],[119.872,-1.783],[119.672,-1.546],[119.684,-1.443],[119.428,-1.339],[119.593,-1.125],[119.561,-0.85]]]},{"kode":81,"nama":"Maluku","mikro":431989,"kecil":2441,"menengah":1558,"besar":0,"total":435988,"ukm":3999,"propUkm":0.009172270796443938,"bh":3456,"buku":1892,"formal":5348,"propFormal":0.012266392653008799,"btt":145103,"bt":12164,"rasioBT":0.07734616925356241,"umkm":435988,"rings":[[[128.138,-8.274],[128.234,-8.271],[128.221,-8.21],[128.092,-8.207],[128.138,-8.274]],[[128.051,-8.234],[128.126,-8.153],[127.766,-8.108],[127.818,-8.2],[128.051,-8.234]],[[125.807,-8.007],[126.071,-7.888],[126.464,-7.975],[126.549,-7.823],[126.843,-7.734],[126.617,-7.558],[126.187,-7.727],[125.947,-7.662],[125.807,-8.007]],[[127.355,-7.65],[127.477,-7.515],[127.365,-7.501],[127.355,-7.65]],[[128.669,-7.161],[128.611,-7.062],[128.525,-7.144],[128.626,-7.214],[128.669,-7.161]],[[128.126,-3.778],[128.299,-3.694],[128.261,-3.618],[128.356,-3.629],[128.339,-3.502],[127.923,-3.681],[127.998,-3.781],[128.233,-3.628],[128.126,-3.778]],[[128.421,-3.633],[128.57,-3.565],[128.449,-3.51],[128.421,-3.633]],[[128.664,-3.607],[128.734,-3.618],[128.73,-3.513],[128.566,-3.498],[128.664,-3.607]],[[126.692,-3.861],[127.223,-3.66],[127.259,-3.374],[127.071,-3.363],[127.035,-3.265],[127.111,-3.236],[126.789,-3.059],[126.017,-3.174],[126.007,-3.358],[126.181,-3.613],[126.692,-3.861]],[[127.625,-3.307],[127.487,-3.298],[127.657,-3.366],[127.625,-3.307]],[[127.944,-3.017],[127.992,-2.924],[127.839,-3.026],[127.944,-3.017]],[[130.794,-8.345],[131.166,-8.119],[130.937,-8.126],[130.794,-8.345]],[[129.582,-7.892],[129.753,-8.055],[129.868,-7.906],[129.675,-7.786],[129.582,-7.892]],[[130.858,-7.503],[130.833,-7.555],[130.972,-7.566],[130.858,-7.503]],[[127.895,-3.49],[127.96,-3.528],[128.091,-3.13],[128.184,-3.065],[128.182,-3.231],[128.265,-3.203],[128.472,-3.46],[128.673,-3.433],[128.885,-3.204],[128.966,-3.226],[128.935,-3.356],[129.539,-3.469],[129.525,-3.298],[129.929,-3.338],[130.02,-3.484],[130.822,-3.87],[130.88,-3.614],[130.805,-3.407],[130.646,-3.376],[130.6,-3.148],[130.384,-2.988],[130.025,-2.999],[129.525,-2.774],[129.129,-2.969],[129.053,-2.796],[128.187,-2.867],[128.081,-2.961],[128.114,-3.064],[127.84,-3.163],[127.943,-3.351],[127.895,-3.49]],[[131.026,-7.71],[131.12,-7.645],[130.967,-7.741],[131.026,-7.71]],[[131.133,-7.462],[131.162,-7.405],[130.969,-7.49],[131.133,-7.462]],[[131.332,-7.954],[131.632,-7.622],[131.633,-7.253],[131.747,-7.21],[131.659,-7.123],[131.537,-7.142],[131.443,-7.343],[131.242,-7.471],[131.156,-7.672],[131.231,-7.72],[131.106,-7.706],[131.103,-7.996],[131.285,-7.924],[131.301,-8.023],[131.332,-7.954]],[[131.45,-4.065],[131.423,-3.952],[131.367,-3.973],[131.45,-4.065]],[[131.957,-7.165],[131.714,-7.154],[131.951,-7.252],[131.957,-7.165]],[[132.741,-5.951],[132.814,-5.849],[132.711,-5.593],[132.635,-5.667],[132.741,-5.951]],[[132.852,-5.993],[133.102,-5.599],[133.154,-5.273],[132.852,-5.993]],[[134.25,-6.889],[134.53,-6.582],[134.117,-6.161],[134.12,-6.425],[134.216,-6.49],[134.116,-6.449],[134.053,-6.772],[134.196,-6.932],[134.25,-6.889]],[[134.295,-6.286],[134.337,-6.227],[134.233,-6.127],[134.227,-6.016],[134.141,-6.013],[134.115,-6.101],[134.295,-6.286]],[[134.458,-6.276],[134.362,-6.365],[134.482,-6.448],[134.533,-6.341],[134.458,-6.276]],[[134.341,-6.026],[134.689,-5.833],[134.685,-5.774],[134.637,-5.714],[134.618,-5.726],[134.594,-5.703],[134.573,-5.671],[134.546,-5.651],[134.536,-5.632],[134.527,-5.564],[134.452,-5.551],[134.343,-5.728],[134.212,-5.72],[134.396,-5.789],[134.294,-5.917],[134.341,-6.026]],[[134.591,-6.464],[134.522,-6.368],[134.517,-6.532],[134.591,-6.464]],[[134.286,-6.141],[134.615,-6.372],[134.729,-6.302],[134.783,-6.094],[134.536,-5.919],[134.439,-6.015],[134.28,-6.048],[134.286,-6.141]],[[134.598,-5.568],[134.699,-5.512],[134.5,-5.42],[134.506,-5.553],[134.598,-5.568]],[[134.714,-6.727],[134.703,-6.579],[134.623,-6.756],[134.714,-6.727]],[[134.715,-6.459],[134.64,-6.477],[134.682,-6.563],[134.764,-6.529],[134.715,-6.459]],[[134.72,-5.833],[134.629,-5.918],[134.734,-5.979],[134.72,-5.833]],[[134.542,-5.636],[134.572,-5.665],[134.616,-5.723],[134.639,-5.712],[134.7,-5.727],[134.764,-5.667],[134.553,-5.561],[134.531,-5.572],[134.542,-5.636]],[[134.874,-6.286],[134.797,-6.389],[134.845,-6.476],[134.874,-6.286]]]},{"kode":82,"nama":"Maluku Utara","mikro":308428,"kecil":3557,"menengah":976,"besar":44,"total":313005,"ukm":4533,"propUkm":0.014482196770019648,"bh":2515,"buku":2256,"formal":4771,"propFormal":0.015242568010095686,"btt":115903,"bt":17307,"rasioBT":0.12992267847759179,"umkm":312961,"rings":[[[126.073,-2.434],[125.963,-2.183],[125.992,-2.028],[125.907,-1.976],[125.881,-2.212],[125.992,-2.441],[126.073,-2.434]],[[125.699,-1.929],[126.323,-1.841],[125.332,-1.826],[125.423,-1.95],[125.699,-1.929]],[[124.437,-2.025],[124.862,-1.892],[125.308,-1.892],[125.321,-1.784],[125.242,-1.725],[125.182,-1.784],[125.136,-1.687],[125.068,-1.773],[124.672,-1.644],[124.401,-1.66],[124.337,-1.891],[124.437,-2.025]],[[127.244,-0.765],[127.334,-0.786],[127.222,-0.603],[127.165,-0.748],[127.244,-0.765]],[[127.228,-0.511],[127.289,-0.292],[127.148,-0.258],[127.119,-0.488],[127.228,-0.511]],[[127.352,-1.433],[127.381,-1.369],[127.282,-1.415],[127.352,-1.433]],[[127.348,0.314],[127.414,0.28],[127.438,0.349],[127.348,0.314]],[[127.323,0.755],[127.391,0.791],[127.325,0.867],[127.323,0.755]],[[127.501,-1.269],[127.67,-1.292],[127.696,-1.229],[127.51,-1.178],[127.501,-1.269]],[[127.349,-0.554],[127.481,-0.63],[127.475,-0.823],[127.63,-0.741],[127.763,-0.866],[127.902,-0.77],[127.598,-0.616],[127.691,-0.466],[127.569,-0.315],[127.457,-0.416],[127.33,-0.349],[127.349,-0.554]],[[127.465,-1.695],[128.021,-1.726],[128.168,-1.637],[127.642,-1.331],[127.433,-1.437],[127.398,-1.627],[127.465,-1.695]],[[127.426,1.044],[127.638,0.815],[127.527,0.553],[127.734,0.311],[127.687,-0.27],[127.865,-0.367],[128.012,-0.679],[128.421,-0.899],[128.049,-0.418],[127.89,-0.003],[127.872,0.31],[127.917,0.455],[128.08,0.476],[128.869,0.24],[128.678,0.337],[128.678,0.55],[128.319,0.656],[128.198,0.79],[128.685,1.068],[128.723,1.572],[128.472,1.552],[128.167,1.366],[128.087,1.261],[128.195,1.165],[127.988,1.091],[127.883,0.829],[127.667,0.874],[127.651,1.022],[127.903,1.15],[128.01,1.312],[128.011,1.738],[127.842,1.85],[128.064,2.172],[127.978,2.207],[127.573,1.756],[127.409,1.234],[127.426,1.044]],[[128.197,2.279],[128.3,2.036],[128.521,2.067],[128.687,2.502],[128.567,2.645],[128.197,2.279]]]},{"kode":91,"nama":"Papua Barat","mikro":116874,"kecil":1090,"menengah":325,"besar":0,"total":118289,"ukm":1415,"propUkm":0.011962228102359475,"bh":1404,"buku":562,"formal":1966,"propFormal":0.016620311271546805,"btt":49029,"bt":4086,"rasioBT":0.07692742163230726,"umkm":118289,"rings":[[[133.338,-4.1],[133.459,-4.251],[133.558,-4.24],[133.338,-4.1]],[[133.73,-2.556],[133.696,-2.613],[133.752,-2.62],[133.755,-2.657],[133.787,-2.657],[133.777,-2.587],[133.73,-2.556]],[[132.599,-2.199],[132.641,-2.286],[132.96,-2.291],[133.179,-2.194],[133.62,-2.231],[133.948,-2.082],[134.0,-2.241],[133.949,-2.325],[133.987,-2.366],[133.988,-2.389],[133.968,-2.387],[133.949,-2.396],[133.973,-2.479],[133.899,-2.481],[133.872,-2.456],[133.826,-2.445],[133.809,-2.471],[133.784,-2.49],[133.805,-2.647],[133.768,-2.664],[133.662,-2.658],[133.642,-2.533],[133.412,-2.695],[133.374,-2.507],[133.212,-2.412],[132.73,-2.804],[132.591,-2.695],[132.232,-2.654],[131.951,-2.772],[132.056,-2.781],[131.999,-2.827],[132.088,-2.96],[132.286,-2.928],[132.47,-3.031],[132.664,-3.316],[132.808,-3.261],[132.817,-3.444],[132.938,-3.549],[132.733,-3.683],[132.917,-4.083],[133.252,-4.072],[133.457,-3.859],[133.409,-3.691],[133.598,-3.529],[133.495,-3.375],[133.632,-3.416],[133.649,-3.121],[133.838,-2.936],[133.875,-3.047],[133.665,-3.245],[133.699,-3.406],[133.621,-3.477],[133.691,-3.671],[133.817,-3.727],[133.836,-3.559],[133.944,-3.846],[134.139,-3.745],[134.191,-3.833],[134.117,-3.907],[134.303,-4.049],[134.272,-3.947],[134.348,-3.965],[134.35,-3.894],[134.506,-4.044],[134.677,-3.92],[134.962,-3.948],[134.662,-3.983],[134.702,-4.069],[134.629,-4.118],[134.885,-4.252],[135.093,-3.966],[135.018,-3.719],[135.198,-3.596],[135.014,-3.599],[134.919,-3.44],[134.727,-3.36],[134.609,-3.128],[134.586,-2.805],[134.661,-2.756],[134.641,-2.506],[134.533,-2.449],[134.459,-2.863],[134.117,-2.16],[134.069,-1.675],[134.275,-1.337],[134.012,-0.964],[134.135,-0.87],[133.971,-0.72],[133.486,-0.741],[133.432,-1.178],[133.252,-1.183],[133.022,-1.351],[132.916,-1.287],[132.737,-1.849],[132.63,-1.909],[132.694,-2.07],[132.599,-2.199]],[[133.832,-2.409],[133.729,-2.441],[133.775,-2.482],[133.823,-2.443],[133.863,-2.47],[133.832,-2.409]],[[133.937,-2.328],[133.841,-2.362],[133.949,-2.395],[133.985,-2.39],[133.987,-2.367],[133.937,-2.328]],[[134.099,-3.916],[134.084,-3.983],[134.187,-4.01],[134.099,-3.916]],[[134.176,-1.916],[134.24,-1.747],[134.147,-1.83],[134.176,-1.916]],[[134.403,-2.062],[134.363,-2.002],[134.349,-2.167],[134.403,-2.062]],[[134.561,-2.406],[134.576,-2.315],[134.507,-2.391],[134.561,-2.406]]]},{"kode":92,"nama":"Papua Barat Daya","mikro":122820,"kecil":511,"menengah":459,"besar":78,"total":123868,"ukm":970,"propUkm":0.007830916782381245,"bh":1180,"buku":1972,"formal":3152,"propFormal":0.02544644298769658,"btt":47266,"bt":4362,"rasioBT":0.08448903695669017,"umkm":123790,"rings":[[[129.789,-1.207],[129.978,-1.171],[129.734,-1.191],[129.789,-1.207]],[[129.83,-1.829],[129.73,-1.9],[130.138,-2.056],[130.44,-1.983],[130.353,-1.919],[130.443,-1.827],[130.348,-1.67],[129.83,-1.829]],[[130.614,-0.485],[130.697,-0.448],[130.505,-0.439],[130.468,-0.52],[130.614,-0.485]],[[130.691,-0.891],[130.917,-0.783],[130.484,-0.789],[130.439,-0.873],[130.691,-0.891]],[[130.752,-1.237],[130.856,-1.343],[130.991,-1.337],[131.081,-1.033],[131.031,-0.913],[130.646,-0.955],[130.752,-1.237]],[[130.233,-0.202],[130.337,-0.265],[130.517,-0.241],[130.569,-0.404],[130.582,-0.318],[130.695,-0.3],[130.75,-0.443],[130.93,-0.33],[130.745,-0.292],[130.637,-0.094],[130.986,-0.358],[131.103,-0.308],[131.247,-0.38],[131.341,-0.287],[131.133,-0.071],[130.795,-0.006],[130.282,-0.112],[130.446,-0.19],[130.387,-0.23],[130.233,-0.202]],[[131.741,-1.455],[131.715,-1.428],[131.587,-1.484],[131.662,-1.546],[131.733,-1.509],[131.741,-1.455]],[[133.486,-0.741],[132.955,-0.454],[132.42,-0.344],[132.16,-0.434],[131.844,-0.707],[131.236,-0.83],[131.249,-1.083],[130.945,-1.442],[131.282,-1.504],[131.355,-1.319],[131.445,-1.507],[131.718,-1.425],[131.739,-1.443],[131.745,-1.494],[131.713,-1.579],[131.854,-1.569],[131.917,-1.72],[132.027,-1.714],[131.922,-1.814],[131.974,-1.973],[132.088,-2.03],[132.04,-2.071],[132.316,-2.284],[132.599,-2.199],[132.694,-2.07],[132.63,-1.909],[132.737,-1.849],[132.916,-1.287],[133.022,-1.351],[133.252,-1.183],[133.432,-1.178],[133.486,-0.741]]]},{"kode":94,"nama":"Papua","mikro":163372,"kecil":2026,"menengah":1917,"besar":29,"total":167344,"ukm":3943,"propUkm":0.023562243044268093,"bh":3675,"buku":912,"formal":4587,"propFormal":0.027410603308155656,"btt":54457,"bt":8832,"rasioBT":0.13955031680070787,"umkm":167315,"rings":[[[134.892,-1.14],[134.981,-1.015],[134.927,-1.075],[134.941,-0.966],[134.841,-0.934],[134.794,-1.032],[134.892,-1.14]],[[135.472,-0.74],[135.643,-0.887],[135.745,-0.743],[135.363,-0.63],[135.489,-0.805],[135.472,-0.74]],[[135.498,-1.68],[136.252,-1.896],[136.899,-1.787],[135.453,-1.6],[135.498,-1.68]],[[135.773,-0.876],[135.858,-1.167],[136.135,-1.2],[136.385,-1.082],[136.16,-1.034],[135.811,-0.685],[135.721,-0.797],[135.773,-0.876]],[[136.011,-2.706],[136.204,-2.801],[136.339,-3.028],[136.571,-3.046],[136.567,-3.254],[136.666,-3.225],[136.668,-3.137],[136.746,-3.267],[136.851,-3.255],[136.898,-3.406],[136.96,-3.391],[136.903,-3.158],[137.041,-3.211],[136.951,-3.284],[137.003,-3.317],[137.111,-3.134],[137.363,-3.069],[137.874,-3.081],[138.046,-2.985],[138.007,-3.185],[138.079,-3.241],[138.133,-2.992],[138.245,-3.049],[138.357,-2.943],[138.524,-2.937],[138.594,-2.961],[138.584,-3.223],[138.662,-3.31],[138.746,-3.178],[138.91,-3.256],[138.872,-3.423],[139.065,-3.276],[139.14,-3.426],[139.473,-3.46],[139.596,-3.723],[139.756,-3.51],[140.001,-3.701],[140.27,-3.67],[140.321,-3.744],[140.688,-3.793],[140.702,-3.886],[140.825,-3.868],[140.777,-3.96],[140.542,-3.967],[140.542,-3.828],[140.413,-3.782],[140.427,-3.931],[140.586,-4.114],[140.694,-4.047],[140.661,-3.985],[141.001,-4.02],[141.001,-2.604],[140.706,-2.629],[140.694,-2.478],[140.391,-2.402],[140.348,-2.462],[140.111,-2.319],[139.765,-2.362],[138.875,-1.97],[138.683,-1.804],[138.066,-1.601],[137.934,-1.458],[137.124,-1.776],[137.088,-1.851],[137.228,-2.057],[137.159,-2.096],[136.75,-2.252],[136.392,-2.221],[136.224,-2.611],[136.011,-2.706]]]},{"kode":95,"nama":"Papua Selatan","mikro":101638,"kecil":985,"menengah":400,"besar":195,"total":103218,"ukm":1385,"propUkm":0.013418202251545273,"bh":895,"buku":1135,"formal":2030,"propFormal":0.019667112325369607,"btt":41408,"bt":3635,"rasioBT":0.08070066381013698,"umkm":103023,"rings":[[[138.821,-8.145],[138.679,-8.17],[138.563,-8.352],[138.897,-8.386],[138.821,-8.145]],[[137.719,-8.412],[138.439,-8.357],[138.684,-8.147],[138.803,-8.134],[138.838,-8.073],[138.91,-8.077],[138.897,-7.902],[138.994,-7.85],[139.081,-7.568],[138.736,-7.369],[138.221,-7.468],[137.867,-7.853],[137.664,-8.302],[137.641,-8.422],[137.719,-8.412]],[[138.654,-6.745],[138.676,-6.868],[138.796,-6.832],[138.654,-6.745]],[[138.709,-6.633],[138.674,-6.725],[138.847,-6.829],[138.945,-6.803],[138.847,-6.799],[138.821,-6.777],[138.815,-6.698],[138.709,-6.633]],[[137.678,-5.218],[137.735,-5.372],[137.863,-5.35],[138.125,-5.533],[138.045,-5.592],[138.066,-5.724],[138.277,-5.841],[138.421,-6.345],[138.824,-6.697],[138.831,-6.781],[138.949,-6.798],[138.941,-6.845],[138.565,-6.933],[138.706,-7.075],[138.685,-7.23],[139.11,-7.57],[139.013,-7.86],[138.909,-7.933],[138.928,-8.062],[138.907,-8.088],[138.861,-8.09],[138.834,-8.123],[138.908,-8.261],[139.207,-8.097],[139.34,-8.206],[139.95,-8.102],[140.889,-9.082],[141.02,-9.126],[141.02,-6.892],[140.913,-6.864],[140.846,-6.684],[141.0,-6.322],[141.001,-5.344],[140.388,-5.212],[140.236,-5.047],[140.06,-5.049],[140.12,-5.151],[140.046,-5.179],[139.983,-5.092],[139.943,-5.221],[139.82,-5.165],[139.919,-5.205],[139.987,-5.057],[139.078,-4.986],[139.165,-4.742],[139.051,-4.846],[138.855,-4.702],[138.59,-4.699],[138.571,-4.793],[138.401,-4.812],[138.326,-4.668],[138.193,-4.713],[138.089,-4.567],[137.924,-4.593],[137.77,-4.648],[137.897,-4.78],[137.678,-5.218]]]},{"kode":96,"nama":"Papua Tengah","mikro":337984,"kecil":1403,"menengah":1207,"besar":117,"total":340711,"ukm":2610,"propUkm":0.007660451232863043,"bh":5251,"buku":5434,"formal":10685,"propFormal":0.031360889434153875,"btt":182805,"bt":5871,"rasioBT":0.031116835209565603,"umkm":340594,"rings":[[[134.885,-4.252],[135.208,-4.466],[135.928,-4.493],[137.678,-5.218],[137.897,-4.78],[137.77,-4.648],[137.924,-4.593],[137.833,-4.505],[137.971,-4.222],[137.877,-4.277],[137.851,-4.205],[137.734,-4.219],[137.736,-4.121],[137.926,-4.19],[138.001,-3.897],[138.354,-3.826],[138.259,-3.774],[138.267,-3.628],[138.075,-3.587],[138.079,-3.241],[138.007,-3.185],[138.046,-2.985],[137.874,-3.081],[137.363,-3.069],[137.111,-3.134],[137.003,-3.317],[136.951,-3.284],[137.041,-3.211],[136.903,-3.158],[136.96,-3.391],[136.898,-3.406],[136.851,-3.255],[136.746,-3.267],[136.668,-3.137],[136.666,-3.225],[136.567,-3.254],[136.571,-3.046],[136.339,-3.028],[136.204,-2.801],[136.011,-2.706],[135.924,-2.961],[135.506,-3.353],[135.348,-3.389],[135.113,-3.382],[134.861,-3.25],[134.846,-2.899],[134.687,-2.967],[134.661,-2.756],[134.586,-2.805],[134.609,-3.128],[134.727,-3.36],[134.919,-3.44],[135.014,-3.599],[135.198,-3.596],[135.018,-3.719],[135.093,-3.966],[134.885,-4.252]]]},{"kode":97,"nama":"Papua Pegunungan","mikro":450070,"kecil":2479,"menengah":0,"besar":0,"total":452549,"ukm":2479,"propUkm":0.005477859856059785,"bh":619,"buku":2771,"formal":3390,"propFormal":0.007490901537734036,"btt":325037,"bt":6195,"rasioBT":0.018702903101149648,"umkm":452549,"rings":[[[137.924,-4.593],[138.089,-4.567],[138.193,-4.713],[138.326,-4.668],[138.401,-4.812],[138.571,-4.793],[138.59,-4.699],[138.855,-4.702],[139.051,-4.846],[139.165,-4.742],[139.078,-4.986],[139.987,-5.057],[139.919,-5.205],[139.82,-5.165],[139.943,-5.221],[139.983,-5.092],[140.046,-5.179],[140.12,-5.151],[140.06,-5.049],[140.236,-5.047],[140.388,-5.212],[141.001,-5.344],[141.001,-4.02],[140.661,-3.985],[140.694,-4.047],[140.586,-4.114],[140.427,-3.931],[140.413,-3.782],[140.542,-3.828],[140.542,-3.967],[140.777,-3.96],[140.825,-3.868],[140.702,-3.886],[140.688,-3.793],[140.321,-3.744],[140.27,-3.67],[140.001,-3.701],[139.756,-3.51],[139.596,-3.723],[139.473,-3.46],[139.14,-3.426],[139.065,-3.276],[138.872,-3.423],[138.91,-3.256],[138.746,-3.178],[138.662,-3.31],[138.584,-3.223],[138.594,-2.961],[138.524,-2.937],[138.357,-2.943],[138.245,-3.049],[138.133,-2.992],[138.079,-3.241],[138.075,-3.587],[138.267,-3.628],[138.259,-3.774],[138.354,-3.826],[138.001,-3.897],[137.926,-4.19],[137.736,-4.121],[137.734,-4.219],[137.851,-4.205],[137.877,-4.277],[137.971,-4.222],[137.833,-4.505],[137.924,-4.593]]]}],"tren":{"tahun":[2020,2021,2022,2023,2024,2025],"umkm":[50249028,50501394,53670730,56440423,56142687,56680235],"mikroPct":[96.81,96.73,96.94,96.74,96.84,null],"sharePdb":[61.2,60.01,58.05,58.6,59.64,null],"tenagaKerja":[113.3,112.9,116.6,121.2,121.8,null],"rasioWira":[2.93,2.89,2.86,3.04,3.08,null]}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ================= DATA ================= */
+const D = JSON.parse(document.getElementById('data').textContent);
+const NAS = D.nasional, P = D.provinsi, TREN = D.tren;
+const $ = (s) => document.querySelector(s), $$ = (s) => document.querySelectorAll(s);
+const nfI = new Intl.NumberFormat('id-ID');
+const nf1 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const jt = (v) => v >= 1e6 ? nf2.format(v / 1e6) + ' jt' : nfI.format(Math.round(v / 1e3)) + ' rb';
+const pct = (v, d = 2) => (d === 1 ? nf1 : nf2).format(v) + '%';
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const eOut = (t) => 1 - Math.pow(1 - t, 3);
+const eInOut = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const eBack = (t) => { const c1 = 1.6, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+function rngDari(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function acak(arr, r) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+const KODE = { 11: 'ACEH', 12: 'SUMUT', 13: 'SUMBAR', 14: 'RIAU', 15: 'JAMBI', 16: 'SUMSEL', 17: 'BKL', 18: 'LAMPUNG', 19: 'BABEL', 21: 'KEPRI', 31: 'DKI', 32: 'JABAR', 33: 'JATENG', 34: 'DIY', 35: 'JATIM', 36: 'BANTEN', 51: 'BALI', 52: 'NTB', 53: 'NTT', 61: 'KALBAR', 62: 'KALTENG', 63: 'KALSEL', 64: 'KALTIM', 65: 'KALTARA', 71: 'SULUT', 72: 'SULTENG', 73: 'SULSEL', 74: 'SULTRA', 75: 'GTLO', 76: 'SULBAR', 81: 'MALUKU', 82: 'MALUT', 91: 'PABAR', 92: 'PBD', 94: 'PAPUA', 95: 'PASEL', 96: 'PATENG', 97: 'PAPEG' };
+P.forEach((p, i) => { p.idx = i; p.slug = slug(p.nama); p.shareNas = p.umkm / NAS.umkm * 100; p.kd = KODE[p.kode] || p.nama.slice(0, 5).toUpperCase(); });
+
+const METRIK = {
+  umkm: { label: 'Jumlah UMKM', kol: 'unit usaha', v: (p) => p.umkm, f: (v) => jt(v), nas: null, sqrt: true,
+    desk: 'Tinggi tumpukan sebanding jumlah unit usaha mikro, kecil, dan menengah di provinsi itu.' },
+  ukm: { label: 'Naik kelas', kol: 'proporsi usaha kecil + menengah', v: (p) => p.propUkm * 100, f: (v) => pct(v), nas: NAS.propUkm * 100,
+    desk: 'Porsi usaha kecil dan menengah dari seluruh unit usaha. Makin tinggi, makin banyak usaha yang sudah naik kelas dari skala mikro.' },
+  formal: { label: 'Formalitas', kol: 'berbadan hukum / berpembukuan', v: (p) => p.propFormal * 100, f: (v) => pct(v), nas: NAS.propFormal * 100,
+    desk: 'Porsi pelaku usaha yang berbadan hukum, atau belum berbadan hukum tapi punya pembukuan lengkap (laba rugi dan neraca).' },
+  buruh: { label: 'Buruh tetap', kol: 'rasio buruh tetap', v: (p) => p.rasioBT * 100, f: (v) => pct(v, 1), nas: NAS.rasioBT * 100,
+    desk: 'Dari pelaku usaha yang dibantu buruh, berapa persen yang sudah mempekerjakan buruh tetap atau dibayar.' },
+};
+for (const [k, m] of Object.entries(METRIK)) {
+  const s = [...P].sort((a, b) => m.v(b) - m.v(a));
+  s.forEach((p, i) => { (p.rank ??= {})[k] = i + 1; });
+  m.urut = s; m.max = m.v(s[0]); m.min = m.v(s[s.length - 1]);
+}
+const SKALA = [
+  { k: 'mikro', nama: 'Mikro', warna: '#D9CDB8', ket: 'lapak, gerobak, warung' },
+  { k: 'kecil', nama: 'Kecil', warna: '#3D6BD6', ket: 'toko dan kios' },
+  { k: 'menengah', nama: 'Menengah', warna: '#EE6A2C', ket: 'bengkel dan unit produksi' },
+  { k: 'besar', nama: 'Besar', warna: '#15171D', ket: 'pabrik' },
+];
+const RAMP = ['#1D4DB0', '#3D6BD6', '#8FA4EC', '#F6B08A', '#F07A3A', '#E4521A'].map((c) => new THREE.Color(c));
+function ramp(t) { t = clamp(t) * (RAMP.length - 1); const i = Math.min(RAMP.length - 2, Math.floor(t)); return RAMP[i].clone().lerp(RAMP[i + 1], t - i); }
+const rampHex = (t) => '#' + ramp(t).getHexString();
+function tWarna(m, p) { const v = m.v(p); return m.sqrt ? Math.sqrt(v / m.max) : (v - m.min) / (m.max - m.min); }
+const PUTIH = new THREE.Color('#ffffff'), AMBER = new THREE.Color('#EE6A2C');
+
+const G = { mode: 'peta', metrik: 'umkm', hover: null, sel: null, sink: 0, dio: null, lensa: 'skala', gl: true, hovLot: -1, malam: 0 };
+
+/* ================= THREE ================= */
+const kanvas = $('#gl'), stage = $('#stage');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: true, alpha: true }); } catch (e) { G.gl = false; }
+const scene = new THREE.Scene();
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 9000);
+const EL = THREE.MathUtils.degToRad(47), YAW = THREE.MathUtils.degToRad(-13);
+cam.position.set(4000 * Math.cos(EL) * Math.sin(YAW), 4000 * Math.sin(EL), 4000 * Math.cos(EL) * Math.cos(YAW));
+cam.lookAt(0, 0, 0); cam.updateMatrixWorld();
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0xd8dbe4, 2.0); scene.add(hemi);
+const bulan = new THREE.DirectionalLight(0xfff6ee, 1.5);
+const ARAH = new THREE.Vector3(-0.5, 1, 0.35).normalize();
+bulan.castShadow = true; bulan.shadow.mapSize.set(2048, 2048); bulan.shadow.bias = -0.0006; bulan.shadow.normalBias = 0.6;
+scene.add(bulan, bulan.target);
+function aturBulan(x, z, r) {
+  bulan.target.position.set(x, 0, z); bulan.position.set(x + ARAH.x * 1200, ARAH.y * 1200, z + ARAH.z * 1200);
+  const c = bulan.shadow.camera; c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.near = 10; c.far = 3000; c.updateProjectionMatrix();
+}
+const lampu = [0, 1, 2].map(() => { const l = new THREE.PointLight(0xffb15a, 0, 120, 0); scene.add(l); return l; });
+
+function teksturKilau() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.18, 'rgba(255,255,255,.55)'); gr.addColorStop(0.5, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const KILAU = teksturKilau();
+const SINAR = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 128; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.6, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,.95)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+
+// laut: grid lintang-bujur halus
+(function laut() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+  g.clearRect(0, 0, 128, 128);
+  g.strokeStyle = 'rgba(21,23,29,.07)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, .5); g.lineTo(128, .5); g.moveTo(.5, 0); g.lineTo(.5, 128); g.stroke();
+  g.fillStyle = 'rgba(21,23,29,.22)'; g.fillRect(0, 0, 2.5, 2.5);
+  const tx = new THREE.CanvasTexture(cv); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(160, 160); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4;
+  const geo = new THREE.PlaneGeometry(8000, 8000); geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); m.position.y = -0.6; scene.add(m);
+  const s = new THREE.Mesh(geo, new THREE.ShadowMaterial({ opacity: 0.13, color: 0x15171d })); s.position.y = -0.5; s.receiveShadow = true; scene.add(s);
+  G.laut = tx;
+})();
+
+/* ================= PETA ================= */
+const S = 20, LON0 = 118, LAT0 = -2.5, TILE = 1.6;
+const px = (lon) => (lon - LON0) * S;
+const bbox = { x0: 1e9, x1: -1e9, z0: 1e9, z1: -1e9 };
+const tiles = [];
+const garisPos = [];
+for (const p of P) {
+  let best = null, bestA = 0;
+  const shapes = p.rings.map((r) => {
+    const pts = r.map(([lo, la]) => new THREE.Vector2(px(lo), (la - LAT0) * S));
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const f = pts[j].x * pts[i].y - pts[i].x * pts[j].y; A += f; cx += (pts[j].x + pts[i].x) * f; cy += (pts[j].y + pts[i].y) * f; }
+    if (Math.abs(A) > bestA) { bestA = Math.abs(A); best = { x: cx / (3 * A), z: -cy / (3 * A) }; }
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; garisPos.push(a.x, TILE + 0.05, -a.y, b.x, TILE + 0.05, -b.y);
+      bbox.x0 = Math.min(bbox.x0, a.x); bbox.x1 = Math.max(bbox.x1, a.x); bbox.z0 = Math.min(bbox.z0, -a.y); bbox.z1 = Math.max(bbox.z1, -a.y); }
+    return new THREE.Shape(pts);
+  });
+  const geo = new THREE.ExtrudeGeometry(shapes, { depth: TILE, bevelEnabled: false }); geo.rotateX(-Math.PI / 2);
+  const mTop = new THREE.MeshLambertMaterial({ color: 0xf2f2f4 }), mSide = new THREE.MeshLambertMaterial({ color: 0xd9dce4 });
+  const mesh = new THREE.Mesh(geo, [mTop, mSide]); mesh.receiveShadow = true; mesh.castShadow = true; mesh.userData.p = p;
+  scene.add(mesh); tiles.push(mesh);
+  Object.assign(p, { mesh, mTop, mSide, c: best, nCur: 0, nTgt: 0, mulai: 0, hov: 0, col: ramp(0) });
+}
+const garis = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(garisPos, 3)), new THREE.LineBasicMaterial({ color: 0x1f56b8, transparent: true, opacity: 0.35 }));
+scene.add(garis);
+const TANAH = new THREE.Color('#F4F3F1'), TANAH_S = new THREE.Color('#F7F5F2');
+
+// tumpukan koin
+const KOIN_H = 3.1, KOIN_GAP = 1.0, STEP = KOIN_H + KOIN_GAP, KOIN_R = 8.2, MAXK = 32, HMAX = MAXK * STEP;
+const glowU = { value: 0.22 };
+const koinMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+koinMat.onBeforeCompile = (sh) => {
+  sh.uniforms.uGlow = glowU;
+  sh.fragmentShader = 'uniform float uGlow;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * uGlow;\n#endif');
+};
+const koin = new THREE.InstancedMesh(new THREE.CylinderGeometry(KOIN_R, KOIN_R, KOIN_H, 28), koinMat, P.length * MAXK);
+koin.castShadow = true; koin.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+for (let i = 0; i < koin.count; i++) koin.setColorAt(i, PUTIH);
+scene.add(koin);
+const kilau = P.map((p) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: KILAU, color: 0xffffff, transparent: true, depthWrite: false, opacity: 0 })); scene.add(s); return s; });
+const KOIN_W = Array.from({ length: MAXK }, (_, i) => ramp(i / (MAXK - 1)));
+const jumlahKoin = (p, k = G.metrik) => { const m = METRIK[k]; return Math.max(1, Math.round(1 + (MAXK - 1) * m.v(p) / m.max)); };
+const tinggiTumpuk = (p) => TILE + p.nCur * STEP;
+
+// kunang-kunang
+const KK = 150, kkPos = new Float32Array(KK * 3), kkDat = [];
+{ const r = rngDari(42); for (let i = 0; i < KK; i++) { const x = lerp(bbox.x0, bbox.x1, r()), z = lerp(bbox.z0 - 40, bbox.z1 + 40, r()), y = 6 + r() * 90; kkDat.push({ x, y, z, f: r() * 6, s: 0.4 + r() }); } }
+const kkGeo = new THREE.BufferGeometry(); kkGeo.setAttribute('position', new THREE.BufferAttribute(kkPos, 3));
+kkGeo.setAttribute('color', new THREE.Float32BufferAttribute(kkDat.flatMap((d, i) => ramp(i % 2 ? 0.05 : 0.9).toArray()), 3));
+const kunang = new THREE.Points(kkGeo, new THREE.PointsMaterial({ size: 7, map: KILAU, vertexColors: true, transparent: true, opacity: 0.5, depthWrite: false, sizeAttenuation: false }));
+scene.add(kunang);
+
+/* ================= TWEEN ================= */
+const tweens = new Map(); let tid = 0;
+function tween(key, { dur = 800, delay = 0, ease = eInOut, on, done }) { tweens.set(key ?? ('_' + tid++), { t0: performance.now() + delay, dur, ease, on, done }); }
+function jalankanTween(now) { for (const [k, w] of tweens) { if (now < w.t0) continue; const t = clamp((now - w.t0) / w.dur); w.on(w.ease(t)); if (t >= 1) { tweens.delete(k); w.done && w.done(); } } }
+
+/* ================= KAMERA ================= */
+let W = 1, H = 1; const F = { l: -1, r: 1, t: 1, b: -1 }; const _v = new THREE.Vector3();
+function bingkai(pts, rect, rataBawah = false) {
+  const inv = cam.matrixWorldInverse; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const q of pts) { _v.copy(q).applyMatrix4(inv); x0 = Math.min(x0, _v.x); x1 = Math.max(x1, _v.x); y0 = Math.min(y0, _v.y); y1 = Math.max(y1, _v.y); }
+  const s = Math.min(rect.w / (x1 - x0), rect.h / (y1 - y0));
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, cx = rect.x + rect.w / 2, cy = rataBawah ? rect.y + rect.h - (y1 - y0) * s / 2 : rect.y + rect.h / 2;
+  const l = mx - cx / s, t = my + cy / s; return { l, r: l + W / s, t, b: t - H / s };
+}
+function kotak(x0, x1, y0, y1, z0, z1) { const a = []; for (const x of [x0, x1]) for (const y of [y0, y1]) for (const z of [z0, z1]) a.push(new THREE.Vector3(x, y, z)); return a; }
+const desktop = () => matchMedia('(min-width: 901px)').matches;
+const bawah = (el) => el.offsetTop + el.offsetHeight;
+function areaPeta() {
+  if (!desktop()) return { x: 10, y: 12, w: W - 20, h: H - 24 };
+  const n = $('#nas'), s = $('#sorot'), d = $('.dock');
+  const x0 = n.offsetLeft + n.offsetWidth + 14, x1 = s.offsetLeft - 14, y0 = bawah($('.topbar')) + 26, y1 = d.offsetTop - 12;
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function areaDio() {
+  if (!desktop()) return { x: 8, y: 10, w: W - 16, h: H - 20 };
+  const c = $('#cap'), sh = $('#sheet'); const y0 = bawah(c) + 6, y1 = sh.offsetTop - 8;
+  return { x: 24, y: y0, w: W - 48, h: y1 - y0 };
+}
+function targetBingkai() {
+  if (G.mode === 'dio' && G.sel) { const c = G.sel.c, w = DIO.lebar / 2 + 2, d = DIO.dalam / 2 + 2; return bingkai(kotak(c.x - w, c.x + w, DIO_Y - 8, DIO_Y + 25, c.z - d, c.z + d), areaDio()); }
+  return bingkai(kotak(bbox.x0, bbox.x1, 0, HMAX * 0.42, bbox.z0, bbox.z1), areaPeta(), desktop());
+}
+function terapkan() { cam.left = F.l; cam.right = F.r; cam.top = F.t; cam.bottom = F.b; cam.updateProjectionMatrix(); }
+function geserBingkai(dur = 1100) {
+  const a = { ...F }, b = targetBingkai();
+  if (!dur) { Object.assign(F, b); terapkan(); return; }
+  tween('kam', { dur, on: (t) => { F.l = lerp(a.l, b.l, t); F.r = lerp(a.r, b.r, t); F.t = lerp(a.t, b.t, t); F.b = lerp(a.b, b.b, t); terapkan(); } });
+}
+function ukurKanvas() { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; if (renderer) { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W, H, false); } }
+
+/* ================= UI PETA ================= */
+function renderNas() {
+  const n = NAS, naik = (n.umkm / TREN.umkm[4] - 1) * 100;
+  const ys = TREN.umkm, k = ys.length, w = 260, h = 64, lo = 49e6, hi = 58e6;
+  const X = (i) => 4 + i * (w - 8) / (k - 1), Y = (v) => 14 + (1 - (v - lo) / (hi - lo)) * (h - 30);
+  const d = ys.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+  const titik = ys.map((v, i) => `<circle cx="${X(i)}" cy="${Y(v)}" r="${i === k - 1 ? 4 : 2.4}" fill="${i === k - 1 ? '#EE6A2C' : '#1F56B8'}" stroke="#fff" stroke-width="1.5"/><text x="${X(i)}" y="${h - 1}" text-anchor="middle" font-size="9" font-weight="700" fill="#9097A4">${String(TREN.tahun[i]).slice(2)}</text>`).join('');
+  $('#nas').innerHTML = `
+    <div class="eyebrow">Nasional · 2025</div>
+    <div class="besar num"><span class="gtx">${nf2.format(n.umkm / 1e6)}</span><small>juta UMKM</small></div>
+    <span class="naik">▲ ${nf2.format(naik)}% dibanding 2024 · ${nfI.format(n.umkm)} unit</span>
+    <svg class="tren" viewBox="0 0 ${w} ${h}" aria-label="Tren jumlah UMKM 2020 sampai 2025, dalam juta unit: ${ys.map((v) => nf1.format(v / 1e6)).join(', ')}">
+      <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1F56B8" stop-opacity=".18"/><stop offset="1" stop-color="#1F56B8" stop-opacity="0"/></linearGradient></defs>
+      <path d="${d}L${X(k - 1)},${h - 14}L${X(0)},${h - 14}Z" fill="url(#ga)"/><defs><linearGradient id="gl2" x1="0" x2="1"><stop offset="0" stop-color="#1F56B8"/><stop offset="1" stop-color="#EE6A2C"/></linearGradient></defs><path class="gt" d="${d}" fill="none" stroke="url(#gl2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${titik}
+      <text x="${X(0)}" y="${Y(ys[0]) - 7}" font-size="9.5" font-weight="700" fill="#5E6472">${nf1.format(ys[0] / 1e6)}</text>
+      <text x="${X(k - 1)}" y="${Y(ys[k - 1]) - 8}" text-anchor="end" font-size="9.5" font-weight="800" fill="#EE6A2C">${nf1.format(ys[k - 1] / 1e6)} jt</text>
+    </svg>
+    <div class="kpi">
+      <div><b class="num">${pct(n.mikro / n.umkm * 100, 1)}</b><span>UMKM berskala mikro</span></div>
+      <div><b class="num">${pct(n.propUkm * 100)}</b><span>usaha sudah naik kelas (kecil + menengah)</span></div>
+      <div><b class="num">${pct(n.propFormal * 100)}</b><span>berbadan hukum atau berpembukuan</span></div>
+      <div><b class="num">${pct(n.rasioBT * 100, 1)}</b><span>pengusaha berburuh punya buruh tetap</span></div>
+      <div class="n"><b class="num">${pct(n.izinUsaha * 100, 1)}</b><span>UMKM punya izin usaha (NIB)</span></div>
+      <div class="n"><b class="num">${pct(n.kreditUmkm * 100, 1)}</b><span>porsi kredit UMKM di perbankan</span></div>
+      <div class="ctx"><p><b class="disp">${nf2.format(TREN.sharePdb[4])}%</b><br>PDB 2024</p><p><b class="disp">${nf1.format(TREN.tenagaKerja[4])} jt</b><br>tenaga kerja</p><p><b class="disp">${nf2.format(TREN.rasioWira[4])}%</b><br>rasio wirausaha</p></div>
+    </div>`;
+  const g = $('#nas .gt'), L = g.getTotalLength(); g.style.strokeDasharray = L; g.style.strokeDashoffset = L;
+  requestAnimationFrame(() => { g.style.transition = 'stroke-dashoffset 1.8s cubic-bezier(.2,.8,.2,1) .5s'; g.style.strokeDashoffset = 0; });
+}
+function sorotan(k) {
+  const m = METRIK[k], a = m.urut[0], z = m.urut[37], va = m.v(a), vz = m.v(z);
+  if (k === 'umkm') {
+    const jawa = P.filter((p) => p.kode >= 31 && p.kode <= 36).reduce((s, p) => s + p.umkm, 0) / NAS.umkm * 100;
+    const top3 = m.urut.slice(0, 3).reduce((s, p) => s + p.umkm, 0) / NAS.umkm * 100;
+    return { judul: `${nf1.format(jawa)}% UMKM Indonesia berada di Pulau Jawa`, baris: [['Terbanyak', a.nama, m.f(va)], ['Paling sedikit', z.nama, m.f(vz)], ['Tiga teratas', 'Jatim · Jabar · Jateng', pct(top3, 1)]] };
+  }
+  const atas = P.filter((p) => m.v(p) >= m.nas).length, kali = nf1.format(va / vz);
+  const judul = { ukm: `Usaha di ${a.nama} ${kali} kali lebih sering naik kelas daripada di ${z.nama}`,
+    formal: `${a.nama} paling formal, ${kali} kali lipat ${z.nama}`,
+    buruh: `${m.f(va)} pengusaha berburuh di ${a.nama} punya buruh tetap, di ${z.nama} hanya ${m.f(vz)}` }[k];
+  return { judul, baris: [['Tertinggi', a.nama, m.f(va)], ['Terendah', z.nama, m.f(vz)], ['Di atas nasional', `${atas} dari 38 provinsi`, m.f(m.nas)]] };
+}
+function renderSorot() {
+  const m = METRIK[G.metrik], s = sorotan(G.metrik);
+  const grad = `linear-gradient(90deg,${[0, .2, .4, .6, .8, 1].map(rampHex).join(',')})`;
+  $('#sorot').innerHTML = `<div class="eyebrow">Sorotan · ${m.label}</div><h3>${s.judul}</h3>
+    ${s.baris.map(([a, b, c]) => `<div class="row"><span>${a}</span><em>${b}</em><b class="num">${c}</b></div>`).join('')}
+    <div class="leg"><div class="ujung"><span>${m.f(m.min)}</span><span>${m.nas != null ? 'nasional ' + m.f(m.nas) : ''}</span><span>${m.f(m.max)}</span></div><div class="grad" style="background:${grad}"></div></div>
+    <p class="desk">${m.desk}</p>
+    <p class="src">Sumber: Kementerian UMKM, Data Prioritas Capaian 2025 dan UMKM dalam Angka 2020–2024. Batas provinsi: <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces">Indonesia GeoJSON</a> (CC BY 4.0).</p>`;
+}
+function renderSeg() {
+  $('#seg').innerHTML = Object.entries(METRIK).map(([k, m]) => `<button type="button" role="tab" data-m="${k}" aria-selected="${k === G.metrik}" class="${k === G.metrik ? 'on' : ''}">${m.label}</button>`).join('');
+}
+function renderBars() {
+  const m = METRIK[G.metrik];
+  $('#dock-judul').textContent = `38 provinsi · ${m.label.toLowerCase()}`;
+  $('#dock-ket').textContent = `diurutkan dari ${m.kol} tertinggi · klik untuk membuka diorama`;
+  const box = $('#bars');
+  if (!box.children.length) box.innerHTML = P.map((p) => `<button type="button" class="kol" data-s="${p.slug}" aria-label="${p.nama}"><span class="bt"></span><span class="kd">${p.kd}</span></button>`).join('') + '<div class="nasl"><span></span></div>';
+  const kol = [...box.querySelectorAll('.kol')];
+  m.urut.forEach((p, i) => { const el = kol.find((e) => e.dataset.s === p.slug); el.style.order = i; const bt = el.firstElementChild; bt.style.height = `calc((100% - 52px) * ${(m.v(p) / m.max).toFixed(4)})`; bt.style.background = `linear-gradient(${rampHex(tWarna(m, p))},#1D4DB0)`; el.title = `${p.nama}: ${m.f(m.v(p))}`; });
+  const nl = box.querySelector('.nasl');
+  if (m.nas != null) { nl.style.display = ''; nl.style.bottom = `calc(52px + (100% - 52px) * ${(m.nas / m.max).toFixed(4)})`; nl.firstElementChild.textContent = `NASIONAL ${m.f(m.nas)}`; } else nl.style.display = 'none';
+}
+
+/* ================= LABEL ================= */
+const lblWrap = $('#labels'); let labels = [];
+function buatLabel() {
+  lblWrap.innerHTML = ''; const m = METRIK[G.metrik];
+  labels = m.urut.slice(0, 5).map((p, i) => {
+    const el = document.createElement('div'); el.className = 'lbl'; el.style.opacity = 0;
+    el.innerHTML = `<div class="tag"><i>${i + 1}</i>${p.nama}<b>${m.f(m.v(p))}</b></div><div class="stem"></div>`;
+    lblWrap.appendChild(el); setTimeout(() => { el.style.opacity = 1; }, 900 + i * 140); return { el, p };
+  });
+}
+function posLabel() {
+  const taruh = [];
+  for (const L of labels) {
+    const { el, p } = L; _v.set(p.c.x, tinggiTumpuk(p) * (1 - G.sink) + 2, p.c.z).project(cam);
+    const x = (_v.x + 1) / 2 * W, y = (1 - _v.y) / 2 * H, tag = el.firstElementChild, w = tag.offsetWidth || 140, h = tag.offsetHeight || 28;
+    let atas = y - 16 - h;
+    for (let it = 0; it < 6; it++) { let g = false; for (const q of taruh) if (Math.abs(x - q.x) < (w + q.w) / 2 + 6 && atas < q.b + 4 && atas + h > q.t - 4) { atas = q.t - h - 6; g = true; } if (!g) break; }
+    const stem = Math.max(8, Math.round(y - (atas + h)));
+    if (L.stem !== stem) { L.stem = stem; el.children[1].style.height = stem + 'px'; }
+    taruh.push({ x, w, t: atas, b: atas + h });
+    const dx = Math.round(clamp(x, w / 2 + 6, W - w / 2 - 6) - x); if (L.dx !== dx) { L.dx = dx; tag.style.transform = `translateX(${dx}px)`; }
+    el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`;
+  }
+}
+
+/* ================= METRIK ================= */
+function gantiMetrik(k, awal = false) {
+  if (k === G.metrik && !awal) return;
+  G.metrik = k; const m = METRIK[k], now = performance.now();
+  for (const p of P) {
+    p.nTgt = jumlahKoin(p, k);
+    p.mulai = now + (awal ? 300 + (p.c.x - bbox.x0) / (bbox.x1 - bbox.x0) * 1000 : (p.rank[k] - 1) * 22);
+    const c0 = p.col.clone(), c1 = ramp(tWarna(m, p));
+    tween('c' + p.kode, { dur: 900, delay: awal ? 0 : (p.rank[k] - 1) * 22, on: (t) => p.col.copy(c0).lerp(c1, t) });
+  }
+  renderSeg(); renderSorot(); renderBars(); buatLabel();
+}
+
+/* ================= TOOLTIP ================= */
+const tip = $('#tip');
+function tampilTip(html, x, y) { tip.innerHTML = html; tip.style.opacity = 1; const r = tip.getBoundingClientRect(); let tx = x + 16, ty = y + 16; if (tx + r.width > innerWidth - 8) tx = x - r.width - 14; if (ty + r.height > innerHeight - 8) ty = y - r.height - 12; tip.style.transform = `translate(${tx}px,${ty}px)`; }
+function sembunyiTip() { tip.style.opacity = 0; }
+function tipProv(p) {
+  const m = METRIK[G.metrik];
+  return `<b>${p.nama}</b><span class="v num">${m.label}: ${m.f(m.v(p))}</span><span class="r">Peringkat ${p.rank[G.metrik]} dari 38${G.metrik !== 'umkm' ? ` · ${jt(p.umkm)} UMKM` : ` · ${nf2.format(p.shareNas)}% nasional`}</span><span class="k">${G.mode === 'dio' ? 'Klik untuk pindah' : 'Klik untuk buka diorama'}</span>`;
+}
+
+/* ================= DIORAMA: PASAR MALAM ================= */
+const DIO = { kol: 20, bar: 10, sel: 6, petak: 4.9 }, DIO_Y = 6;
+DIO.lebar = DIO.kol * DIO.sel + 8; DIO.dalam = DIO.bar * DIO.sel + 8;
+const GEO = {
+  box: new THREE.BoxGeometry(1, 1, 1), cyl: new THREE.CylinderGeometry(1, 1, 1, 12), cone: new THREE.ConeGeometry(1, 1, 14),
+  pyr: (() => { const g = new THREE.ConeGeometry(1, 1, 4); g.rotateY(Math.PI / 4); return g; })(),
+  prism: (() => { const g = new THREE.CylinderGeometry(1, 1, 1, 3); g.rotateZ(Math.PI / 2); g.rotateX(-Math.PI / 2); return g; })(),
+  sph: new THREE.SphereGeometry(1, 12, 9),
+  sinar: (() => { const g = new THREE.CylinderGeometry(1.1, 2.0, 26, 18, 1, true); g.translate(0, 13, 0); return g; })(), okta: new THREE.OctahedronGeometry(1, 0),
+};
+const MC = {}; const mat = (hex) => MC[hex] ??= new THREE.MeshLambertMaterial({ color: hex });
+const matE = (hex) => MC['e' + hex] ??= new THREE.MeshLambertMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.35 });
+const AWN = ['#F3EEE6', '#D8D0C2', '#BAC4D4', '#F2CDB6', '#9EA8B9', '#E6D6BE'];
+function bx(m, w, h, d, x, y, z, bayang = true) { const o = new THREE.Mesh(GEO.box, typeof m === 'string' ? mat(m) : m); o.scale.set(w, h, d); o.position.set(x, y + h / 2, z); o.castShadow = bayang; o.receiveShadow = true; return o; }
+function msh(g, m, sx, sy, sz, x, y, z, bayang = true) { const o = new THREE.Mesh(g, typeof m === 'string' ? mat(m) : m); o.scale.set(sx, sy, sz); o.position.set(x, y, z); o.castShadow = bayang; o.receiveShadow = true; return o; }
+function bangunan(tipe, r) {
+  const g = new THREE.Group(), gerak = [], asap = []; const warna = AWN[Math.floor(r() * AWN.length)];
+  if (tipe === 'mikro') {
+    const v = r();
+    if (v < 0.42) {
+      g.add(bx('#B9875A', 3.3, 1.3, 1.6, 0, 0, 0.55)); g.add(bx('#7A5232', 3.5, 0.14, 1.8, 0, 1.3, 0.55, false));
+      g.add(bx(AWN[(AWN.indexOf(warna) + 2) % AWN.length], 2.4, 0.45, 1.0, 0, 1.44, 0.5, false));
+      for (const [x, z, h] of [[-1.55, 1.3, 3.1], [1.55, 1.3, 3.1], [-1.55, -0.9, 3.5], [1.55, -0.9, 3.5]]) g.add(bx('#6A472B', 0.16, h, 0.16, x, 0, z, false));
+      g.add(msh(GEO.sph, matE('#FFD9A0'), 0.32, 0.32, 0.32, 0, 2.95, 0.4, false));
+      const aw = new THREE.Group(); aw.position.set(0, 3.5, -0.95);
+      aw.add(bx(warna, 3.8, 0.16, 2.7, 0, 0, 1.3)); aw.add(bx('#FFF3DE', 0.75, 0.18, 2.72, 0, 0, 1.3, false));
+      aw.rotation.x = 0.2; g.add(aw); gerak.push({ o: aw, j: 'ayun', f: r() * 6 });
+    } else if (v < 0.72) {
+      g.add(bx(warna, 2.8, 1.2, 1.5, 0, 0.75, 0.2)); g.add(bx('#FFF3DE', 2.9, 0.12, 1.6, 0, 1.95, 0.2, false));
+      g.add(bx(matE('#FFC977'), 1.8, 0.5, 0.08, 0, 1.0, 0.98, false));
+      for (const s of [-1, 1]) { const w = msh(GEO.cyl, '#1E1E1E', 0.62, 0.22, 0.62, 0.5, 0.62, 0.2 + 0.86 * s, false); w.rotation.x = Math.PI / 2; g.add(w); }
+      g.add(msh(GEO.cyl, '#6B4A2B', 0.08, 3.2, 0.08, -0.9, 3.6, 0.2, false));
+      const pay = new THREE.Group(); pay.position.set(-0.9, 5.0, 0.2); pay.add(msh(GEO.cone, AWN[(AWN.indexOf(warna) + 3) % AWN.length], 2.0, 0.9, 2.0, 0, 0, 0));
+      g.add(pay); gerak.push({ o: pay, j: 'putar', f: r() * 6 });
+    } else {
+      g.add(bx('#E6D6B8', 3.2, 2.3, 2.9, 0, 0, 0)); g.add(bx('#4A3220', 1.0, 1.5, 0.1, -0.7, 0, 1.46, false));
+      g.add(bx(matE('#FFCF86'), 1.0, 0.8, 0.1, 0.8, 0.9, 1.46, false));
+      g.add(msh(GEO.pyr, '#B14E36', 2.75, 1.5, 2.6, 0, 3.05, 0));
+    }
+  } else if (tipe === 'kecil') {
+    g.add(bx('#F4F1EA', 4.0, 4.6, 3.8, 0, 0, 0)); g.add(bx('#3D6BD6', 4.15, 0.85, 0.25, 0, 2.55, 1.92, false));
+    g.add(bx(matE('#FFE0A6'), 3.1, 1.6, 0.12, 0, 0.35, 1.92, false)); g.add(bx(matE('#FFD48A'), 2.8, 0.8, 0.12, 0, 3.5, 1.92, false));
+    g.add(bx('#CFC6B4', 4.2, 0.35, 4.0, 0, 4.6, 0, false));
+    const papan = new THREE.Group(); papan.position.set(1.7, 3.9, 2.2); papan.add(bx(matE('#3D6BD6'), 0.15, 0.9, 0.9, 0, -0.9, 0.45, false)); g.add(papan); gerak.push({ o: papan, j: 'goyang', f: r() * 6 });
+  } else if (tipe === 'menengah') {
+    g.add(bx('#C9D3DA', 4.4, 3.2, 4.2, 0, 0, 0));
+    for (const z of [-1.05, 1.05]) g.add(msh(GEO.prism, '#EE6A2C', 4.4, 0.75, 1.2, 0, 3.57, z));
+    g.add(bx('#56707A', 2.0, 2.1, 0.12, -0.8, 0, 2.12, false)); g.add(bx(matE('#FFCF86'), 1.2, 0.6, 0.12, 1.3, 1.6, 2.12, false));
+    g.add(msh(GEO.cyl, '#8E9AA1', 0.32, 5.6, 0.32, 1.65, 2.8, -1.6)); asap.push(new THREE.Vector3(1.65, 5.8, -1.6));
+  } else {
+    g.add(bx('#B8C3C8', 4.7, 4.0, 4.5, 0, 0, 0)); g.add(bx('#1B2730', 4.8, 0.4, 4.6, 0, 4.0, 0, false)); g.add(bx('#A9B5BA', 2.3, 2.2, 2.0, -1.0, 4.3, -0.9));
+    g.add(bx(matE('#FFD58A'), 3.6, 0.6, 0.1, 0, 2.4, 2.27, false));
+    for (const [x, z] of [[1.5, -1.4], [1.5, 0.3]]) { g.add(msh(GEO.cyl, '#DCD6CB', 0.42, 9, 0.42, x, 4.5, z)); g.add(msh(GEO.cyl, '#D04A38', 0.44, 0.9, 0.44, x, 8.2, z, false)); asap.push(new THREE.Vector3(x, 9.2, z)); }
+  }
+  return { g, gerak, asap };
+}
+function bagi200(p) {
+  const v = [p.mikro, p.kecil, p.menengah, p.besar], raw = v.map((x) => x / p.total * 200), fl = raw.map(Math.floor);
+  let sisa = 200 - fl.reduce((a, b) => a + b, 0);
+  raw.map((x, i) => [x - fl[i], i]).sort((a, b) => b[0] - a[0]).slice(0, sisa).forEach(([, i]) => fl[i]++);
+  return fl;
+}
+function jumlahFormal(p) { const n = Math.round(p.propFormal * 200); return n === 0 && p.formal > 0 ? 1 : n; }
+function roundRect(w, d, r) { const s = new THREE.Shape(), x = -w / 2, y = -d / 2; s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + d - r); s.quadraticCurveTo(x + w, y + d, x + w - r, y + d); s.lineTo(x + r, y + d); s.quadraticCurveTo(x, y + d, x, y + d - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; }
+const PETAK = { mikro: '#E8E1D5', kecil: '#3D6BD6', menengah: '#EE6A2C', besar: '#15171D' };
+const MS = {}; const matSinar = (hex) => MS[hex] ??= new THREE.MeshBasicMaterial({ map: SINAR, color: hex, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+const MK = {}; const matKilau = (hex) => MK[hex] ??= new THREE.SpriteMaterial({ map: KILAU, color: hex, transparent: true, opacity: 0.55, depthWrite: false });
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _c = new THREE.Color(), _y = new THREE.Vector3(0, 1, 0);
+const BENDERA = ['#1F56B8', '#EE6A2C', '#FFFFFF', '#F4A57A', '#3D6BD6'];
+const GEO_BENDERA = (() => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([-0.6, 0, 0, 0.6, 0, 0, 0, -1.2, 0], 3)); g.computeVertexNormals(); return g; })();
+const _x = new THREE.Vector3(1, 0, 0);
+function bangunDiorama(p) {
+  const r = rngDari(p.kode * 7919 + 13);
+  const root = new THREE.Group(); root.position.set(p.c.x, DIO_Y, p.c.z);
+  const g = new THREE.Group(); root.add(g);
+  const pg = new THREE.ExtrudeGeometry(roundRect(DIO.lebar, DIO.dalam, 5), { depth: 7, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); pg.translate(0, -7, 0);
+  const plinth = new THREE.Mesh(pg, [new THREE.MeshLambertMaterial({ color: '#FFFFFF' }), new THREE.MeshLambertMaterial({ color: '#E3E6ED' })]); plinth.receiveShadow = true; plinth.castShadow = true; g.add(plinth);
+  const pitaG = new THREE.ExtrudeGeometry(roundRect(DIO.lebar + 0.5, DIO.dalam + 0.5, 5.25), { depth: 0.5, bevelEnabled: false }); pitaG.rotateX(-Math.PI / 2); pitaG.translate(0, -1.6, 0);
+  g.add(new THREE.Mesh(pitaG, new THREE.MeshBasicMaterial({ color: '#EE6A2C' })));
+  const n = bagi200(p), tipe = []; SKALA.forEach((s, i) => { for (let k = 0; k < n[i]; k++) tipe.push(s.k); }); acak(tipe, r);
+  const formal = new Set(acak([...Array(200).keys()], r).slice(0, jumlahFormal(p)));
+  const petak = new THREE.InstancedMesh(new THREE.BoxGeometry(DIO.petak, 0.5, DIO.petak), new THREE.MeshLambertMaterial({ color: 0xffffff }), 200); petak.receiveShadow = true; g.add(petak);
+  const lots = [], emit = [], t0 = performance.now() + 700;
+  for (let i = 0; i < 200; i++) {
+    const kol = i % DIO.kol, bar = Math.floor(i / DIO.kol), x = (kol - (DIO.kol - 1) / 2) * DIO.sel, z = (bar - (DIO.bar - 1) / 2) * DIO.sel;
+    const b = bangunan(tipe[i], r); b.g.position.set(x, 0.5, z); b.g.rotation.y = (r() < 0.5 ? 0 : Math.PI) + (r() - 0.5) * 0.18; b.g.scale.setScalar(0.001); b.g.userData.lot = i; g.add(b.g);
+    const sorot = new THREE.Group(); sorot.position.set(x, 0.5, z); sorot.visible = false;
+    const sn = new THREE.Mesh(GEO.sinar, matSinar('#ffffff')); sorot.add(sn);
+    const kl = new THREE.Sprite(matKilau('#ffffff')); kl.scale.set(11, 11, 1); kl.position.y = 1.2; sorot.add(kl);
+    const gem = new THREE.Mesh(GEO.okta, mat('#ffffff')); gem.scale.set(1.9, 2.6, 1.9); gem.position.y = 28; gem.castShadow = true; sorot.add(gem); g.add(sorot);
+    lots.push({ i, tipe: tipe[i], formal: formal.has(i), x, z, g: b.g, gerak: b.gerak, sorot, sn, kl, gem, mulai: t0 + Math.hypot(x / DIO.lebar, z / DIO.dalam) * 1100 + r() * 260, pop: 0, nyala: 0, col: new THREE.Color(), lompat: 0 });
+    for (const a of b.asap) emit.push({ lot: i, pos: a, acc: r() });
+  }
+  // lampu gantung
+  const tiang = [], bohlam = [], kabel = [];
+  const L = DIO.lebar - 10, bentang = 4;
+  for (let b = 1; b < DIO.bar; b++) {
+    const z = (b - DIO.bar / 2) * DIO.sel;
+    for (let s = 0; s <= bentang; s++) tiang.push([-L / 2 + s * L / bentang, z]);
+    const pts = [];
+    for (let s = 0; s < bentang; s++) { const xa = -L / 2 + s * L / bentang, nB = 10; for (let k = 0; k <= nB; k++) { const t = k / nB, x = xa + t * L / bentang, y = 9.2 - 1.8 * 4 * t * (1 - t); pts.push(new THREE.Vector3(x, y, z)); if (k > 0 && k < nB) bohlam.push([x, y - 0.35, z]); } }
+    kabel.push(pts);
+  }
+  for (const [x, z] of tiang) g.add(msh(GEO.cyl, '#B9BFCB', 0.12, 9.3, 0.12, x, 0.5 + 4.65, z, false));
+  for (const pts of kabel) { const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: '#7D8594', transparent: true, opacity: 0.8 })); ln.position.y = 0.5; g.add(ln); }
+  const bh = new THREE.InstancedMesh(GEO_BENDERA, new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide }), bohlam.length);
+  bohlam.forEach(([x, y, z], i) => { _m4.makeTranslation(x, y + 0.85, z); bh.setMatrixAt(i, _m4); bh.setColorAt(i, _c.set(BENDERA[i % BENDERA.length])); });
+  bh.userData.pos = bohlam; bh.castShadow = true; bh.visible = false; g.add(bh);
+  // orang
+  const orang = [];
+  for (let k = 0; k < 24; k++) {
+    const o = new THREE.Group(); o.add(msh(GEO.cyl, AWN[k % AWN.length], 0.36, 1.25, 0.36, 0, 1.12, 0)); o.add(msh(GEO.sph, '#D9B08C', 0.33, 0.33, 0.33, 0, 2.1, 0, false));
+    const lajur = Math.floor(r() * (DIO.bar + 1)); o.position.set((r() - 0.5) * (DIO.lebar - 8), 0, (lajur - DIO.bar / 2) * DIO.sel); o.scale.setScalar(0.001); g.add(o);
+    orang.push({ o, v: (2.2 + r() * 2.4) * (r() < 0.5 ? -1 : 1), f: r() * 6 });
+  }
+  const puffs = []; for (let k = 0; k < 90; k++) { const m = new THREE.Mesh(GEO.sph, new THREE.MeshLambertMaterial({ color: '#C9CED8', transparent: true, opacity: 0, depthWrite: false })); m.visible = false; g.add(m); puffs.push({ m, hidup: 0, umur: 1 }); }
+  const dio = { p, root, g, petak, lots, emit, orang, puffs, bh, n, nFormal: formal.size, keluar: 0, t0: performance.now() };
+  warnaiPetak(dio, true); scene.add(root);
+  lampu.forEach((l, i) => l.position.set(p.c.x + (i - 1) * DIO.lebar * 0.33, DIO_Y + 26, p.c.z + 4));
+  return dio;
+}
+function warnaLot(l) {
+  if (G.lensa === 'formal') return { petak: l.formal ? '#EE6A2C' : '#ECEEF2', sorot: l.formal ? '#EE6A2C' : null };
+  return { petak: PETAK[l.tipe], sorot: l.tipe === 'mikro' ? null : SKALA.find((s) => s.k === l.tipe).warna };
+}
+function warnaiPetak(dio, langsung = false) {
+  for (const l of dio.lots) {
+    const w = warnaLot(l), a = l.col.clone(), b = new THREE.Color(w.petak);
+    l.nyalaT = w.sorot ? 1 : 0;
+    if (w.sorot) { l.sn.material = matSinar(w.sorot); l.kl.material = matKilau(w.sorot); l.gem.material = mat(w.sorot); }
+    if (langsung) { l.col.copy(b); continue; }
+    const d = Math.hypot(l.x, l.z) * 4;
+    tween('pt' + l.i, { dur: 520, delay: d, on: (t) => l.col.copy(a).lerp(b, t) });
+    if (w.sorot) tween('lp' + l.i, { dur: 650, delay: d, ease: (t) => t, on: (t) => { l.lompat = Math.sin(t * Math.PI) * (1 - t * 0.3); } });
+  }
+}
+function animasiDiorama(dio, now, dt) {
+  const k = clamp((now - dio.t0) / 900); let s = eOut(k);
+  if (dio.keluar) s = 1 - eInOut(clamp((now - dio.keluar) / 420));
+  dio.g.scale.set(lerp(0.55, 1, s), Math.max(0.001, s), lerp(0.55, 1, s)); dio.g.position.y = lerp(-14, 0, s);
+  dio.g.rotation.y = Math.sin(now / 4600) * 0.06;
+  const tt = now / 1000;
+  for (const l of dio.lots) {
+    const q = clamp((now - l.mulai) / 520); if (!dio.keluar) l.pop = eBack(q);
+    const sc = Math.max(0.001, l.pop), naik = l.lompat * 2.2;
+    l.g.scale.setScalar(sc); l.g.position.y = 0.5 + naik;
+    _p.set(l.x, 0.25 + naik * 0.25 - (1 - Math.min(1, q * 1.6)) * 0.6, l.z); _q.identity(); _s.set(1, 1, 1); _m4.compose(_p, _q, _s); dio.petak.setMatrixAt(l.i, _m4);
+    _c.copy(l.col); if (G.hovLot === l.i) _c.lerp(AMBER, 0.6); dio.petak.setColorAt(l.i, _c);
+    l.nyala += ((l.nyalaT || 0) * (q >= 1 ? 1 : 0) - l.nyala) * Math.min(1, dt * 5);
+    l.sorot.visible = l.nyala > 0.01;
+    if (l.sorot.visible) { const pulse = 0.85 + Math.sin(tt * 2.2 + l.i) * 0.15; l.sn.scale.set(l.nyala * pulse, l.nyala, l.nyala * pulse); l.kl.scale.setScalar(12 * l.nyala * pulse); l.gem.scale.set(1.9 * l.nyala, 2.6 * l.nyala, 1.9 * l.nyala); l.gem.position.y = 28 + Math.sin(tt * 2.4 + l.i) * 0.8; l.gem.rotation.y = tt * 1.5 + l.i; }
+    for (const gk of l.gerak) { if (gk.j === 'ayun') gk.o.rotation.x = 0.2 + Math.sin(tt * 2.1 + gk.f) * 0.07; else if (gk.j === 'putar') gk.o.rotation.y = tt * 0.9 + gk.f; else gk.o.rotation.x = Math.sin(tt * 2.6 + gk.f) * 0.25; }
+  }
+  dio.petak.instanceMatrix.needsUpdate = true; if (dio.petak.instanceColor) dio.petak.instanceColor.needsUpdate = true;
+  for (const m of Object.values(MS)) m.opacity = 0.72 + Math.sin(tt * 1.8) * 0.12;
+  // lampu gantung menyala setelah lapak berdiri
+  const nyalaBh = clamp((now - dio.t0 - 1500) / 900) * s;
+  dio.bh.visible = nyalaBh > 0.02;
+  const pos = dio.bh.userData.pos;
+  for (let i = 0; i < pos.length; i++) { _q.setFromAxisAngle(_x, Math.sin(tt * 3.2 + i * 0.55) * 0.38); _p.set(pos[i][0], pos[i][1] + 0.85, pos[i][2]); _s.setScalar(Math.max(0.001, nyalaBh)); _m4.compose(_p, _q, _s); dio.bh.setMatrixAt(i, _m4); }
+  dio.bh.instanceMatrix.needsUpdate = true;
+  const bx2 = DIO.lebar / 2 - 4;
+  for (const o of dio.orang) {
+    o.o.position.x += o.v * dt; if (o.o.position.x > bx2) { o.o.position.x = bx2; o.v *= -1; } if (o.o.position.x < -bx2) { o.o.position.x = -bx2; o.v *= -1; }
+    o.o.position.y = 0.3 + Math.abs(Math.sin(tt * 7 + o.f)) * 0.25; o.o.rotation.y = o.v > 0 ? Math.PI / 2 : -Math.PI / 2;
+    o.o.scale.setScalar(Math.max(0.001, clamp((now - dio.t0 - 1400) / 600) * s));
+  }
+  for (const e of dio.emit) {
+    const l = dio.lots[e.lot]; if (l.pop < 0.9 || dio.keluar) continue; e.acc += dt * 1.6;
+    while (e.acc > 1) { e.acc -= 1; const pf = dio.puffs.find((q) => q.hidup <= 0); if (!pf) break; _p.copy(e.pos).applyAxisAngle(_y, l.g.rotation.y).add(_s.set(l.x, 0.5, l.z)); pf.m.position.copy(_p); pf.hidup = pf.umur = 2.4 + Math.random() * 0.8; pf.m.visible = true; pf.vx = 0.9 + Math.random() * 0.5; }
+  }
+  for (const pf of dio.puffs) { if (pf.hidup <= 0) continue; pf.hidup -= dt; const u = 1 - pf.hidup / pf.umur; pf.m.position.y += dt * 2.6; pf.m.position.x += dt * pf.vx; pf.m.scale.setScalar(0.45 + u * 1.3); pf.m.material.opacity = (1 - u) * 0.6 * Math.min(1, u * 6); if (pf.hidup <= 0) pf.m.visible = false; }
+}
+function buangDiorama(dio) {
+  dio.keluar = performance.now();
+  setTimeout(() => { scene.remove(dio.root); const keep = new Set([...Object.values(MC), ...Object.values(MS), ...Object.values(MK)]);
+    dio.root.traverse((o) => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (!keep.has(m)) m.dispose(); }); });
+    dio.petak.dispose(); dio.bh.dispose(); }, 460);
+}
+
+/* ================= UI DIORAMA ================= */
+function siluet(p) {
+  const luas = (r) => Math.abs(r.reduce((a, [x, y], i) => { const [x2, y2] = r[(i + 1) % r.length]; return a + x * y2 - x2 * y; }, 0) / 2);
+  const amax = Math.max(...p.rings.map(luas)); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const r of p.rings) if (luas(r) >= amax * 0.03) for (const [x, y] of r) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, -y); y1 = Math.max(y1, -y); }
+  const w = x1 - x0, h = y1 - y0, pad = Math.max(w, h) * 0.06;
+  const d = p.rings.map((r) => 'M' + r.map(([x, y]) => `${(x - x0).toFixed(3)},${(-y - y0).toFixed(3)}`).join('L') + 'Z').join('');
+  return `<svg viewBox="${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}" aria-hidden="true" style="overflow:hidden"><defs><linearGradient id="gsil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F56B8"/><stop offset="1" stop-color="#EE6A2C"/></linearGradient></defs><path d="${d}" fill="url(#gsil)" stroke="#15171D" stroke-width="${Math.max(w, h) * 0.01}" stroke-linejoin="round"/></svg>`;
+}
+function renderLensa() {
+  const L = { skala: 'Skala usaha', formal: 'Formalitas' };
+  $('#lensa').innerHTML = Object.entries(L).map(([k, v]) => `<button type="button" role="tab" data-l="${k}" aria-selected="${k === G.lensa}" class="${k === G.lensa ? 'on' : ''}">${v}</button>`).join('');
+  const p = G.sel; if (!p) return; const n = bagi200(p), nf = jumlahFormal(p);
+  if (G.lensa === 'skala') {
+    const bag = SKALA.map((s, i) => n[i] ? `<b>${n[i]}</b> ${s.nama.toLowerCase()}` : null).filter(Boolean);
+    const teks = bag.length === 1 ? bag[0] : bag.slice(0, -1).join(', ') + (bag.length > 2 ? ', dan ' : ' dan ') + bag[bag.length - 1];
+    $('#cap-teks').innerHTML = `Bayangkan pasar berisi 200 usaha di ${p.nama}: ${teks}. Tiang cahaya menandai usaha yang sudah naik kelas.${n[3] === 0 ? ' Usaha besar terlalu sedikit untuk muncul.' : ''}`;
+    $('#cap-lg').innerHTML = SKALA.map((s) => `<span><i style="background:${s.warna}"></i>${s.nama} · ${s.ket}</span>`).join('');
+  } else {
+    $('#cap-teks').innerHTML = `Dari 200 usaha di ${p.nama}, hanya <b>${nf}</b> yang berbadan hukum atau punya pembukuan lengkap (${pct(p.propFormal * 100)}; nasional ${pct(NAS.propFormal * 100)}).`;
+    $('#cap-lg').innerHTML = `<span><i style="background:#EE6A2C"></i>Usaha formal (tiang cahaya)</span><span style="color:var(--mut2)">Letak lapak hanya ilustrasi</span>`;
+  }
+}
+function renderSheet(p) {
+  const tot = p.total;
+  const stack = SKALA.map((s) => `<i style="width:${(p[s.k] / tot * 100).toFixed(3)}%;background:${s.warna}" title="${s.nama}"></i>`).join('');
+  const nm = p.kecil + p.menengah + p.besar;
+  const zoom = SKALA.slice(1).map((s) => `<i style="width:${nm ? (p[s.k] / nm * 100).toFixed(2) : 0}%;background:${s.warna}"></i>`).join('');
+  const rows = SKALA.map((s) => `<i style="background:${s.warna}"></i><span>${s.nama}</span><span class="v num">${nfI.format(p[s.k])}</span><span class="p num">${pct(p[s.k] / tot * 100)}</span>`).join('');
+  const ind = (k) => { const M = METRIK[k], v = M.v(p), d = v - M.nas;
+    return `<div class="ind"><div class="t"><span>${k === 'ukm' ? 'Naik kelas (proporsi UKM)' : M.label}</span><b class="num">${M.f(v)}</b></div>
+      <div class="trek"><i style="width:0%;background:linear-gradient(90deg,#1F56B8,${rampHex(tWarna(M, p))})" data-w="${(v / M.max * 100).toFixed(1)}"></i><u style="left:${(M.nas / M.max * 100).toFixed(1)}%"></u></div>
+      <div class="k"><span>Peringkat ${p.rank[k]} dari 38</span><span class="${d >= 0 ? 'up' : 'dn'}">${d >= 0 ? '+' : '−'}${nf2.format(Math.abs(d))} poin vs nasional ${M.f(M.nas)}</span></div></div>`; };
+  const catat = []; if (p.besar === 0) catat.push('usaha besar'); if (p.menengah === 0) catat.push('usaha menengah'); if (p.buku === 0) catat.push('pelaku usaha non badan hukum berpembukuan');
+  $('#sheet').innerHTML = `
+    <section><h4>Skala usaha <span>dari ${nfI.format(tot)} total usaha</span></h4>
+      <div class="angka num"><span class="gtx">${nfI.format(p.umkm)}</span><small>UMKM</small></div>
+      <div class="chips"><span class="chip">#${p.rank.umkm} jumlah UMKM</span><span class="chip t">${nf2.format(p.shareNas)}% UMKM nasional</span></div>
+      <div class="stack">${stack}</div>
+      <div class="zoom"><div class="ket"><span>Diperbesar: usaha yang sudah naik kelas</span><span>${pct(nm / tot * 100)} dari total</span></div><div class="stack" style="height:8px">${zoom}</div></div>
+      <div class="rows">${rows}</div></section>
+    <section><h4>Dibanding nasional <span>garis gelap = nasional</span></h4>${ind('ukm')}${ind('formal')}${ind('buruh')}</section>
+    <section><div class="siluet">${siluet(p)}<p><b>${p.nama}</b><br>Kode BPS ${p.kode} · ${p.kd}</p></div>
+      <div class="rinci"><span class="h">Formalitas</span><span>Berbadan hukum</span><b class="num">${nfI.format(p.bh)}</b><span>Non badan hukum, pembukuan lengkap</span><b class="num">${nfI.format(p.buku)}</b></div>
+      <div class="rinci"><span class="h">Tenaga kerja</span><span>Dibantu buruh tetap</span><b class="num">${nfI.format(p.bt)}</b><span>Dibantu buruh tidak tetap</span><b class="num">${nfI.format(p.btt)}</b></div>
+      ${catat.length ? `<div class="catatan">Data mencatat 0 untuk ${catat.join(', ')}. Kemungkinan karena keterbatasan sampel survei, bukan berarti tidak ada sama sekali.</div>` : ''}</section>`;
+  $$('#sheet section').forEach((s) => { s.scrollTop = 0; });
+  requestAnimationFrame(() => requestAnimationFrame(() => $$('#sheet .trek i').forEach((el) => { el.style.width = el.dataset.w + '%'; })));
+  const u = METRIK[G.metrik].urut, i = u.indexOf(p), a = u[(i + 37) % 38], b = u[(i + 1) % 38];
+  $('#dio-nama').textContent = p.nama;
+  $('#dio-chip').innerHTML = `<span class="chip">${METRIK[G.metrik].label} #${p.rank[G.metrik]}</span><span class="chip t">${METRIK[G.metrik].f(METRIK[G.metrik].v(p))}</span>`;
+  $('#navp').innerHTML = `<button type="button" data-s="${a.slug}" title="Provinsi sebelumnya">‹<span>·</span>${a.nama}</button><button type="button" data-s="${b.slug}" title="Provinsi berikutnya">${b.nama}<span>·</span>›</button>`;
+}
+
+/* ================= MASUK / KEMBALI ================= */
+function masuk(p, dariHash = false) {
+  if (!p || (G.mode === 'dio' && G.sel === p)) return;
+  if (G.dio) { buangDiorama(G.dio); G.dio = null; }
+  G.mode = 'dio'; G.sel = p; G.hover = null; sembunyiTip();
+  document.body.classList.replace('mode-peta', 'mode-dio');
+  renderSheet(p); renderLensa();
+  const s0 = G.sink; tween('sink', { dur: 900, on: (t) => { G.sink = lerp(s0, 1, t); } });
+    if (G.gl) { G.dio = bangunDiorama(p); aturBulan(p.c.x, p.c.z, 110); }
+  requestAnimationFrame(() => { ukurKanvas(); geserBingkai(1250); });
+  if (!desktop()) scrollTo({ top: 0, behavior: 'smooth' });
+  if (!dariHash) { try { history.replaceState(null, '', '#' + p.slug); } catch (e) { location.hash = p.slug; } }
+}
+function kembali(dariHash = false) {
+  if (G.mode !== 'dio') return;
+  G.mode = 'peta'; document.body.classList.replace('mode-dio', 'mode-peta');
+  if (G.dio) { buangDiorama(G.dio); G.dio = null; }
+  const s0 = G.sink; tween('sink', { dur: 1000, delay: 250, on: (t) => { G.sink = lerp(s0, 0, t); } });
+    const now = performance.now(); P.forEach((p) => { p.mulai = now + 350 + (p.rank[G.metrik] - 1) * 14; });
+  aturBulan(0, -40, 560); G.sel = null; G.hovLot = -1;
+  requestAnimationFrame(() => { ukurKanvas(); geserBingkai(1250); });
+  if (!dariHash) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; } }
+}
+function dariHash() { const h = decodeURIComponent(location.hash.slice(1)); const p = P.find((q) => q.slug === h); if (p) masuk(p, true); else kembali(true); }
+
+/* ================= INTERAKSI ================= */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let tekan = null;
+function kenai(ev) {
+  const r = kanvas.getBoundingClientRect(); ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam);
+  if (G.mode === 'dio' && G.dio) {
+    const hit = ray.intersectObjects([G.dio.petak, ...G.dio.lots.map((l) => l.g)], true)[0];
+    if (hit) { if (hit.object === G.dio.petak) return { lot: hit.instanceId }; let o = hit.object; while (o && o.userData.lot === undefined) o = o.parent; if (o) return { lot: o.userData.lot }; }
+    const pl = ray.intersectObject(G.dio.g.children[0], false)[0]; if (pl) return { panggung: true };
+  }
+  const hits = ray.intersectObjects(G.mode === 'peta' ? [koin, ...tiles] : tiles, false);
+  for (const h of hits) { const p = h.object === koin ? P[Math.floor(h.instanceId / MAXK)] : h.object.userData.p; if (p && p !== G.sel) return { p }; }
+  return null;
+}
+function tandaiBar(p) { $$('#bars .kol').forEach((b) => b.classList.toggle('hov', !!p && b.dataset.s === p.slug)); }
+kanvas.addEventListener('pointermove', (ev) => {
+  if (!G.gl) return; const k = kenai(ev);
+  G.hover = k && k.p || null; G.hovLot = k && k.lot !== undefined ? k.lot : -1;
+  kanvas.style.cursor = G.hover ? 'pointer' : 'default';
+  if (G.hover) { tampilTip(tipProv(G.hover), ev.clientX, ev.clientY); tandaiBar(G.hover); }
+  else if (G.hovLot >= 0) { const l = G.dio.lots[G.hovLot], s = SKALA.find((q) => q.k === l.tipe);
+    tampilTip(`<b>Usaha ${s.nama.toLowerCase()}</b><span class="r">${s.ket}</span><span class="r">${l.formal ? 'Ilustrasi: formal (berbadan hukum / berpembukuan)' : 'Ilustrasi: belum formal'}</span><span class="k">1 lapak = 1 dari 200 usaha</span>`, ev.clientX, ev.clientY); }
+  else { sembunyiTip(); tandaiBar(null); }
+});
+kanvas.addEventListener('pointerleave', () => { G.hover = null; G.hovLot = -1; sembunyiTip(); tandaiBar(null); });
+kanvas.addEventListener('pointerdown', (ev) => { tekan = [ev.clientX, ev.clientY]; });
+kanvas.addEventListener('pointerup', (ev) => { if (!tekan || Math.hypot(ev.clientX - tekan[0], ev.clientY - tekan[1]) > 6) return; tekan = null; const k = kenai(ev); if (k && k.p) masuk(k.p); });
+const cariProv = (q) => { q = q.trim().toLowerCase(); return q && (P.find((p) => p.nama.toLowerCase() === q) || P.find((p) => p.nama.toLowerCase().startsWith(q)) || P.find((p) => p.nama.toLowerCase().includes(q) || p.kd.toLowerCase() === q)); };
+$('#dl-prov').innerHTML = [...P].sort((a, b) => a.nama.localeCompare(b.nama)).map((p) => `<option value="${p.nama}">`).join('');
+$('#cari').addEventListener('change', (ev) => { const p = cariProv(ev.target.value); if (p) { masuk(p); ev.target.value = ''; ev.target.blur(); } });
+$('#cari').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { const p = cariProv(ev.target.value); if (p) { masuk(p); ev.target.value = ''; ev.target.blur(); } } });
+$('#btn-info').addEventListener('click', (ev) => { const b = $('#info').classList.toggle('buka'); ev.currentTarget.setAttribute('aria-expanded', b); });
+document.addEventListener('click', (ev) => { if ($('#info').classList.contains('buka') && !ev.target.closest('#info,#btn-info')) { $('#info').classList.remove('buka'); $('#btn-info').setAttribute('aria-expanded', false); } });
+$('#seg').addEventListener('click', (ev) => { const b = ev.target.closest('[data-m]'); if (b) gantiMetrik(b.dataset.m); });
+$('#lensa').addEventListener('click', (ev) => { const b = ev.target.closest('[data-l]'); if (!b || b.dataset.l === G.lensa) return; G.lensa = b.dataset.l; renderLensa(); if (G.dio) warnaiPetak(G.dio); });
+$('#bars').addEventListener('click', (ev) => { const b = ev.target.closest('[data-s]'); if (b) masuk(P.find((p) => p.slug === b.dataset.s)); });
+$('#bars').addEventListener('pointerover', (ev) => { const b = ev.target.closest('[data-s]'); G.hover = b ? P.find((p) => p.slug === b.dataset.s) : null; if (G.hover) { const r = b.getBoundingClientRect(); tampilTip(tipProv(G.hover), r.left + r.width / 2, r.top - 90); } });
+$('#bars').addEventListener('pointerleave', () => { G.hover = null; sembunyiTip(); });
+$('#navp').addEventListener('click', (ev) => { const b = ev.target.closest('[data-s]'); if (b) masuk(P.find((p) => p.slug === b.dataset.s)); });
+$('#kembali').addEventListener('click', () => kembali());
+addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { if ($('#info').classList.contains('buka')) { $('#info').classList.remove('buka'); return; } kembali(); } });
+addEventListener('hashchange', dariHash);
+addEventListener('resize', () => { ukurKanvas(); geserBingkai(0); });
+
+/* ================= LOOP ================= */
+let tLalu = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - tLalu) / 1000); tLalu = now; const tt = now / 1000;
+  jalankanTween(now);
+    glowU.value = 0.22;
+  for (const p of P) {
+    const aktif = G.hover === p ? 1 : 0; p.hov += (aktif - p.hov) * Math.min(1, dt * 12);
+    if (now > p.mulai && p.nCur !== p.nTgt) { const d = p.nTgt - p.nCur, st = dt * 30; p.nCur = Math.abs(d) <= st ? p.nTgt : p.nCur + Math.sign(d) * st; }
+    const jadiSel = p === G.sel;
+    _c.copy(TANAH).lerp(p.col, 0.10 + p.hov * 0.3); if (G.sink > 0) _c.lerp(TANAH_S, G.sink * 0.6);
+    
+    p.mTop.color.copy(_c); p.mSide.color.copy(_c).multiplyScalar(0.86);
+    const kecil = 1 - G.sink, nP = Math.ceil(p.nCur), base = p.idx * MAXK, angkat = p.hov * 2.2;
+    for (let i = 0; i < MAXK; i++) {
+      const vis = clamp(p.nCur - i); const sc = i < nP ? Math.max(0.0001, eBack(vis)) * kecil : 0.0001;
+      _p.set(p.c.x, TILE + angkat + (i * STEP + KOIN_H / 2) * kecil, p.c.z); _q.identity(); _s.set(sc, Math.max(0.0001, Math.min(1, vis * 1.4)) * kecil + 0.0001, sc);
+      _m4.compose(_p, _q, _s); koin.setMatrixAt(base + i, _m4);
+      _c.copy(KOIN_W[i]).lerp(PUTIH, p.hov * 0.35); koin.setColorAt(base + i, _c);
+    }
+    const sp = kilau[p.idx], top = tinggiTumpuk(p) * kecil + angkat + 1.2;
+    sp.position.set(p.c.x, top, p.c.z); const pl = 1 + Math.sin(tt * 2 + p.idx) * 0.12;
+    sp.scale.setScalar((14 + p.nCur * 0.35 + p.hov * 12) * pl); sp.material.color.copy(p.col); sp.material.color.copy(KOIN_W[Math.max(0, nP - 1)]); sp.material.opacity = (0.32 + p.hov * 0.35) * kecil * clamp(p.nCur);
+  }
+  koin.instanceMatrix.needsUpdate = true; koin.instanceColor.needsUpdate = true;
+  garis.material.opacity = 0.55 * (1 - G.sink * 0.6);
+  for (let i = 0; i < KK; i++) { const d = kkDat[i]; kkPos[i * 3] = d.x + Math.sin(tt * 0.3 * d.s + d.f) * 8; kkPos[i * 3 + 1] = d.y + Math.sin(tt * 0.7 * d.s + d.f * 2) * 4; kkPos[i * 3 + 2] = d.z + Math.cos(tt * 0.25 * d.s + d.f) * 8; }
+  kkGeo.attributes.position.needsUpdate = true; kunang.material.opacity = 0.45 * (0.7 + 0.3 * Math.sin(tt * 1.3)) * (1 - G.sink);
+  G.laut.offset.x = now * 0.000003;
+  if (G.dio) animasiDiorama(G.dio, now, dt);
+  posLabel();
+  renderer.render(scene, cam);
+  requestAnimationFrame(frame);
+}
+
+/* ================= MULAI ================= */
+renderNas();
+if (G.gl) {
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.setClearColor(0x000000, 0);
+  aturBulan(0, -40, 560); ukurKanvas(); geserBingkai(0);
+  gantiMetrik('umkm', true);
+  $('#pesan').remove(); document.body.classList.remove('memuat');
+  requestAnimationFrame(frame);
+  if (location.hash.length > 1) setTimeout(dariHash, 700);
+} else {
+  renderSeg(); renderSorot(); renderBars();
+  $('#pesan').textContent = 'Peta 3D butuh WebGL, yang tidak tersedia di peramban ini. Ringkasan dan bilah provinsi tetap bisa dipakai.';
+  document.body.classList.remove('memuat');
+  $('#seg').addEventListener('click', (ev) => { const b = ev.target.closest('[data-m]'); if (b) { G.metrik = b.dataset.m; renderSeg(); renderSorot(); renderBars(); } });
+}
+</script>
+</body>
+</html>
